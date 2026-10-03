@@ -3,39 +3,26 @@
   The control, rendered in a real browser, for looking at.
 
       npm run build
-      then open this file, or point headless Chrome at it to capture a picture
+      npm run harness -- --no-open --port 8108
+      then open http://localhost:8108/dev/preview.html, or run node dev/shots.js
 
-  ---
+  `dev/smoke.js` loads the same bundle in Node and asserts what the control
+  *decided*. This page renders it, which answers what no assertion can: whether
+  the thumb sits on the rail, whether the box wraps under the track on a narrow
+  column, whether the arc's value sits in its hollow.
 
-  **Why this exists alongside `smoke.js`.** That file loads the same bundle in
-  Node and asserts what the control *decided*. This one renders it, and the two
-  answer different questions. A stray ellipsis beside every checkbox was
-  invisible to every assertion for three reviews and obvious in one screenshot;
-  it was the user agent's `text-overflow`, drawn on a cell nobody had looked at
-  in pixels.
-
-  **And why it is a browser page rather than `react-dom/server`.** The suite
-  renders with `renderToStaticMarkup`, which runs no effects and dispatches no
-  events. Since 0.3.1 the editing state lives in React state driven by an effect
-  — asking the platform which cells this user may write — and a click. Neither
-  happens under the server renderer, so a server-rendered picture of this
-  control can only ever show the state before any of it has run. Here, effects
-  run and `?edit` can click a cell.
-
-  The Fluent components are stubbed: `FluentProvider` becomes a `<div>` and the
-  theme is empty, so every `var(--colorX, fallback)` in the stylesheet resolves
-  to its literal fallback. That is the light theme, and it is the honest limit of
-  this page — it shows layout and the fallbacks, and nothing about the real
-  Fluent palette a form would supply.
+  No host publishes a theme here, so every `var(--colorX, fallback)` in the
+  stylesheet resolves to its literal fallback: the light theme, or the dark
+  fallbacks with ?dark=1. It shows layout and the fallbacks, and nothing about
+  a form's own palette.
 
   Query parameters, all optional:
 
-    ?pinStart=1&pinEnd=1   pin that many columns at each end
-    ?edit=1                turn editing on
-    ?open=1                and open the first editable cell's editor
-    ?filter=in             type a filter into the first text column
-    ?select=none|single|multiple
-    ?page=25               page size
+    ?width=360          each card's width in px
+    ?dark=1             the dark fallbacks, on a dark ground
+    ?only=a,b           only these cards, by id
+    ?locale=de-DE       the user's number format
+    ?rtl=1              right to left
 -->
 <html lang="en">
 <head>
@@ -43,212 +30,153 @@
     <title>Number Slider — preview</title>
     <link rel="stylesheet" href="../out/controls/NumberSlider/css/NumberSlider.css" />
     <style>
-        /*
-          Nothing here styles the control. It stands in for the host page, so
-          the picture has the padding and ground a form would give it — and so
-          the screenshot has a margin rather than bleeding to the edge.
-        */
-        body { margin: 0; padding: 16px; background: #ffffff; font-family: 'Segoe UI', system-ui, sans-serif; }
-        #root { max-width: 100%; }
+        /* The host page: a form's ground and padding, nothing of the control. */
+        body {
+            margin: 0;
+            padding: 24px;
+            background: #f0f0f0;
+            font-family: "Segoe UI", sans-serif;
+        }
+        body.dark {
+            background: #0a0a0a;
+            color: #fff;
+        }
+        .grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            align-items: flex-start;
+        }
+        .card {
+            box-sizing: border-box;
+            padding: 16px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, .14), 0 0 2px rgba(0, 0, 0, .12);
+        }
+        .dark .card {
+            background: #292929;
+        }
+        .card h2 {
+            margin: 0 0 4px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #616161;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+        .card .label {
+            margin: 0 0 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .dark .card h2 {
+            color: #adadad;
+        }
     </style>
 </head>
 <body>
-<div id="root"></div>
+    <div class="grid" id="grid"></div>
 
-<script src="../node_modules/react/umd/react.development.js"></script>
-<script src="../node_modules/react-dom/umd/react-dom.development.js"></script>
-<script src="fixture.js"></script>
-<script src="host.js"></script>
+    <script src="fixture.js"></script>
+    <script src="host.js"></script>
+    <script>
+        // The bundle registers itself on load; catch it before it runs.
+        window.__registration = window.__pcfHost.captureRegistration(window);
+    </script>
+    <script src="../out/controls/NumberSlider/bundle.js"></script>
+    <script>
+        (function () {
+            'use strict';
 
-<script>
-    /*
-      The platform globals, under the names the bundle asks for.
+            var host = window.__pcfHost;
+            var params = new URLSearchParams(window.location.search);
+            var dark = params.get('dark') === '1';
+            var width = Number(params.get('width')) || 360;
+            var only = (params.get('only') || '').split(',').filter(Boolean);
+            var locale = params.get('locale') || 'en-US';
+            var rtl = params.get('rtl') === '1';
 
-      `pcf-scripts` maps a `<platform-library>` version onto the build it
-      supports, so Fluent 9.46.2 arrives as `FluentUIReactv940`. If a version
-      bump ever changes those names this page fails loudly on the next line
-      rather than rendering an empty box — which is what `smoke.js` avoids by
-      reading the names out of the bundle, and what is not worth the machinery
-      here.
-    */
-    window.Reactv16 = window.React;
-    window.FluentUIReactv940 = {
-        FluentProvider: function (props) {
-            return React.createElement('div', { dir: props.dir }, props.children);
-        },
-        webLightTheme: {},
-    };
+            document.body.classList.toggle('dark', dark);
 
-    var registration = window.__pcfHost.captureRegistration(window);
-</script>
+            var INPUTS = { style: 'slider', min: null, max: null, step: null, valueBox: 'show', unit: null, bands: null };
+            var SCORE = { column: 'cll_score', valueType: 'Decimal', value: 72.5, minValue: 0, maxValue: 100, precision: 2, label: 'Score' };
+            var SEATS_UPPER = { type: 'Whole.None', raw: 400, column: 'cll_maxseats', minValue: 0, maxValue: 500 };
 
-<script src="../out/controls/NumberSlider/bundle.js"></script>
+            function merge(base, extra) {
+                var out = Object.assign({}, base, extra);
 
-<script>
-    (async function () {
-        'use strict';
+                out.inputs = Object.assign({}, INPUTS, base.inputs, extra && extra.inputs);
 
-        var host = window.__pcfHost;
-        var fixture = window.__pcfFixture;
-        var params = new URLSearchParams(window.location.search);
-        var root = document.getElementById('root');
-
-        if (typeof registration.ctor !== 'function') {
-            root.textContent = 'The bundle registered no control. Run npm run build.';
-
-            return;
-        }
-
-        /*
-          **Which fixture, and it matters for a picture.**
-
-          `dev/fixture.js` exists to break things: nulls, an overlong name, raw
-          numbers. Its `getFormattedValue` is `String(value)`, so revenue renders
-          as `4200000` — a control that does not exist, since a real platform
-          formats it. `demo/records.json` is the hub's demo fixture and carries
-          values already formatted the way a form shows them, which is what a
-          published screenshot should be of.
-
-          Default stays the edge-case one, because the common use of this page is
-          looking at the states that break.
-        */
-        if (params.get('fixture') === 'demo') {
-            var response = await fetch('../demo/records.json');
-
-            fixture = await response.json();
-        }
-
-        /*
-          A column the fixture marks `isReadOnly` must answer `isEditable`
-          false here too, or this rig is more permissive than both the hub's
-          demo harness and a real form — and a screenshot taken from it would
-          show an editor over a cell the platform refuses. Derived from the
-          fixture rather than hard-coded, so one JSON file drives both hosts.
-        */
-        var readOnly = (fixture.columns || [])
-            .filter(function (column) { return column.isReadOnly; })
-            .map(function (column) { return column.name; });
-
-        var number = function (name) {
-            var raw = params.get(name);
-
-            return raw === null || raw === '' ? null : Number(raw);
-        };
-
-        var handle = host.createHost(fixture, {
-            // A real width, because the pinning clamp reads it and a control
-            // that never subscribed reads -1. The page is what sizes the
-            // picture; this is what the control is told.
-            width: window.innerWidth - 32,
-            // Values as a platform would render them; see makeDisplay in host.js.
-            format: true,
-            height: 600,
-            inputs: {
-                selectionMode: params.get('select') || 'multiple',
-                enableSorting: true,
-                enableFiltering: true,
-                enableExport: true,
-                openOnRowClick: true,
-                pageSize: number('page'),
-                pageSizeOptions: params.get('sizes'),
-                pinnedStart: number('pinStart'),
-                pinnedEnd: number('pinEnd'),
-                enableEditing: params.get('edit') === '1',
-                editableColumns: params.get('editable'),
-            },
-            quirks: readOnly.length ? { readOnlyColumns: readOnly } : undefined,
-        });
-
-        var instance = new registration.ctor();
-
-        /*
-          Paint through `drive`, not through a single `updateView`.
-
-          A dataset control's mutators do not take effect until the next fetch,
-          so `applyPageSize` calls `refresh()` and the first pass renders
-          against data that is already stale. `drive` runs until the host owes
-          nothing, which is what a platform does across several `updateView`
-          calls, and hands back the last element.
-        */
-        var painting = false;
-
-        function paint() {
-            // `notifyOutputChanged` fires during a write, and a re-entrant
-            // paint would recurse through the same render.
-            if (painting) {
-                return;
+                return out;
             }
 
-            painting = true;
+            var STATES = [
+                { id: 'slider', title: 'Slider', options: merge(SCORE, { inputs: { step: 0.5 } }) },
+                { id: 'budget', title: 'Currency, step 1,000', options: merge({ column: 'revenue', valueType: 'Currency', value: 250000, minValue: 0, maxValue: 1000000, precision: 2, label: 'Budget' }, { inputs: { step: 1000 } }) },
+                { id: 'bands', title: 'Bands, a unit', options: merge(SCORE, { label: 'Probability', value: 85, inputs: { unit: '%', bands: '50 danger; 80 warning; 100 success' } }) },
+                { id: 'range', title: 'Range', options: merge({ column: 'cll_minseats', valueType: 'Whole.None', value: 10, minValue: 0, maxValue: 500, label: 'Seats' }, { inputs: { style: 'range' }, bound: { upperValue: SEATS_UPPER } }) },
+                { id: 'stepper', title: 'Stepper', options: merge({ column: 'cll_quantity', valueType: 'Whole.None', value: 3, minValue: 0, maxValue: 10, label: 'Quantity' }, { inputs: { style: 'stepper' } }) },
+                { id: 'bar', title: 'Bar gauge', options: merge(SCORE, { label: 'Health', value: 42, inputs: { style: 'bar', unit: '%', bands: '30 danger; 60 warning; 100 success' } }) },
+                { id: 'arc', title: 'Arc gauge', options: merge(SCORE, { inputs: { style: 'arc' } }) },
+                { id: 'readOnly', title: 'Read-only form', options: merge(SCORE, { disabled: true }) },
+                { id: 'empty', title: 'Empty column', options: merge(SCORE, { value: null }) },
+                { id: 'outside', title: 'Saved value outside the range', options: merge(SCORE, { value: 150, maxValue: 500, inputs: { max: 100 } }) },
+                { id: 'noBox', title: 'No value box', options: merge(SCORE, { inputs: { valueBox: 'hide' } }) },
+                { id: 'unmapped', title: 'Range, no second column', options: merge({ column: 'cll_minseats', valueType: 'Whole.None', value: 10, minValue: 0, maxValue: 500, label: 'Seats' }, { inputs: { style: 'range' }, bound: { upperValue: 'unmapped' } }) },
+            ];
 
-            try {
-                ReactDOM.render(host.drive(instance, handle, 10).element, root);
-            } finally {
-                painting = false;
+            var grid = document.getElementById('grid');
+
+            /* Real strings: the 1033 .resx's text where it has a key. */
+            var strings = {};
+
+            fetch('../NumberSlider/strings/NumberSlider.1033.resx')
+                .then(function (r) { return r.text(); })
+                .then(function (xml) {
+                    var doc = new DOMParser().parseFromString(xml, 'application/xml');
+
+                    Array.prototype.forEach.call(doc.querySelectorAll('data'), function (node) {
+                        strings[node.getAttribute('name')] = node.querySelector('value').textContent;
+                    });
+                })
+                .catch(function () {})
+                .then(function () {
+                    STATES.filter(function (s) { return only.length === 0 || only.indexOf(s.id) !== -1; }).forEach(mount);
+                });
+
+            function mount(state) {
+                var card = document.createElement('section');
+                var heading = document.createElement('h2');
+                var label = document.createElement('p');
+                var container = document.createElement('div');
+
+                card.className = 'card';
+                card.id = state.id;
+                card.style.width = width + 'px';
+                heading.textContent = state.title;
+                label.className = 'label';
+                label.textContent = state.options.label;
+                card.append(heading, label, container);
+                grid.append(card);
+
+                var options = Object.assign({
+                    clientUrl: host.nextClientUrl(),
+                    dark: dark,
+                    rtl: rtl,
+                    locale: locale,
+                    host: 'model-driven',
+                    typeGroup: ['Whole.None', 'Decimal', 'FP', 'Currency'],
+                    getString: function (key) { return strings[key] !== undefined ? strings[key] : key; },
+                }, state.options);
+                var instance = new window.__registration.ctor();
+
+                instance.init(host.createContext(options), function () {}, {}, container);
+                instance.updateView(host.createContext(options));
+                window.__instances = window.__instances || {};
+                window.__instances[state.id] = instance;
             }
-        }
-
-        instance.init(handle.context, paint, {}, root);
-        paint();
-
-        /*
-          Everything below is for a *captured* picture rather than for a person
-          looking at the page: headless Chrome cannot click, so the states worth
-          photographing have to arrange themselves.
-
-          The delay is for the editability answers. `isEditable` is a promise on
-          the platform and a promise here, so the editors do not exist on the
-          first paint — a screenshot taken synchronously would show the
-          read-only fallback and look like the feature was missing.
-        */
-        window.setTimeout(function () {
-            var filter = params.get('filter');
-
-            if (filter) {
-                var box = document.querySelector('.DataTable-filter');
-
-                if (box) {
-                    var setter = Object.getOwnPropertyDescriptor(
-                        window.HTMLInputElement.prototype,
-                        'value',
-                    ).set;
-
-                    // React tracks the previous value on the node, so assigning
-                    // `.value` directly is swallowed as "no change". Going
-                    // through the prototype setter is what makes the synthetic
-                    // event carry the new value.
-                    setter.call(box, filter);
-                    box.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-            }
-
-            /*
-              A pinned column only reads as pinned once something has scrolled
-              past it. Nothing in a headless capture can scroll, so the page
-              does it — and this is the only way to photograph the feature at
-              all.
-            */
-            var scroll = Number(params.get('scroll'));
-
-            if (scroll > 0) {
-                var pane = document.querySelector('.DataTable-scroll');
-
-                if (pane) {
-                    pane.scrollLeft = scroll;
-                }
-            }
-
-            if (params.get('open') === '1') {
-                var trigger = document.querySelector('.DataTable-editTrigger');
-
-                if (trigger) {
-                    trigger.click();
-                }
-            }
-
-            document.title = 'ready';
-        }, 400);
-    })();
-</script>
+        })();
+    </script>
 </body>
 </html>

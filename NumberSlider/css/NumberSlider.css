@@ -344,33 +344,44 @@
     justify-content: space-between;
 }
 
-.NumberSlider--range .NumberSlider-track {
+/* At most half the row each, so the two boxes stay side by side under the
+   track's two ends however narrow the column. */
+.NumberSlider.NumberSlider--range .NumberSlider-side,
+.NumberSlider.NumberSlider--range .NumberSlider-field--upper {
+    flex: 0 1 min(7.5em, calc(50% - var(--spacingHorizontalM, 12px) / 2));
+    min-width: 0;
+}
+
+.NumberSlider.NumberSlider--range .NumberSlider-track {
     flex-basis: 100%;
 }
 
-.NumberSlider--stepper .NumberSlider-side {
+.NumberSlider.NumberSlider--stepper .NumberSlider-side {
     flex: 0 1 14em;
 }
 
-/* Each style shows its own parts. */
-.NumberSlider--stepper .NumberSlider-track,
-.NumberSlider--bar .NumberSlider-track,
-.NumberSlider--arc .NumberSlider-track,
-.NumberSlider--slider .NumberSlider-meter,
-.NumberSlider--range .NumberSlider-meter,
-.NumberSlider--stepper .NumberSlider-meter,
-.NumberSlider--bar .NumberSlider-side,
-.NumberSlider--arc .NumberSlider-side,
-.NumberSlider--bar .NumberSlider-arc,
-.NumberSlider--arc .NumberSlider-meter-rail,
+/*
+ * Each style shows its own parts. Two classes on the root, so these win over
+ * the single-class rules that give each part its display, wherever those sit.
+ */
+.NumberSlider.NumberSlider--stepper .NumberSlider-track,
+.NumberSlider.NumberSlider--bar .NumberSlider-track,
+.NumberSlider.NumberSlider--arc .NumberSlider-track,
+.NumberSlider.NumberSlider--slider .NumberSlider-meter,
+.NumberSlider.NumberSlider--range .NumberSlider-meter,
+.NumberSlider.NumberSlider--stepper .NumberSlider-meter,
+.NumberSlider.NumberSlider--bar .NumberSlider-side,
+.NumberSlider.NumberSlider--arc .NumberSlider-side,
+.NumberSlider.NumberSlider--bar .NumberSlider-arc,
+.NumberSlider.NumberSlider--arc .NumberSlider-meter-rail,
 .NumberSlider:not(.NumberSlider--stepper) .NumberSlider-step {
     display: none;
 }
 
 /* The box hidden by the maker — except on a stepper, where it is the value. */
-.NumberSlider--no-box:not(.NumberSlider--stepper) .NumberSlider-side,
-.NumberSlider--no-box:not(.NumberSlider--stepper) .NumberSlider-field--upper,
-.NumberSlider--no-box .NumberSlider-meter-text {
+.NumberSlider.NumberSlider--no-box:not(.NumberSlider--stepper) .NumberSlider-side,
+.NumberSlider.NumberSlider--no-box:not(.NumberSlider--stepper) .NumberSlider-field--upper,
+.NumberSlider.NumberSlider--no-box .NumberSlider-meter-text {
     display: none;
 }
 
