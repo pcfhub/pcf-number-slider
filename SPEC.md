@@ -233,6 +233,15 @@ property's `formatted`. **Not verified:** a record in a non-base currency.
   whether this control's own value moved; compare the value.
 - Not run: `null` into a Business-required column.
 
+### P4 — a held key's rate (2026-10-03)
+
+30 writes to `cll_score`, 1 to 30, about 47 ms apart (the browser stretched
+the 33 ms timer) over 1.36 s. **One** pass came back, 133 ms after the last
+write, holding 30; **one** form OnChange; nothing reordered. The form
+coalesces a burst of `notifyOutputChanged` into a single `updateView` and a
+single OnChange, so **arrow keys write on every press, with no throttle**,
+and the echo guard sees one echo, of the last value.
+
 ## Demo
 
 `full` is the candidate: no `<feature-usage>`, no Web API, nothing leaves the
