@@ -78,9 +78,12 @@ First confirm the page runs this build, not a cached one (`customcontrols`
 can say 0.0.1 while the page still runs an older bundle):
 
 ```js
-const u = performance.getEntriesByType('resource').map((e) => e.name).find((n) => /NumberSlider/.test(n) && /bundle\.js/.test(n));
-(await (await fetch(u)).text()).includes('__pcfNumberSliderProbe')
+Object.keys(window.__pcfNumberSliderProbe ?? {})   // five column names: the probe is running
 ```
+
+Only this build creates that global, so it is the check. The bundle can't be
+found by name in `performance.getEntriesByType('resource')` on this form
+(2026-10-03: no entry at all while the probe ran — confirmed, five keys).
 
 **Set-up on cll365 — done 2 Oct 2026**, with `pac solution import`, the
 pp-prodev skill's `ppdev form control bind`, and the Web API for what ppdev
