@@ -154,6 +154,54 @@ has no command for (columns, the tab, the records):
 | P10 | A canvas app: OnChange per drag; a clear reaching the source; `context.formatting` present; `attributes` absent | A screen with the control on a number, OnChange `Set(changes, changes + 1)`, a label showing `changes`. Drag once, say the count; then, in the console, `__pcfNumberSliderProbe['value'].write(null)` | The canvas column of the docs |
 | P11 | German number formats: separators in `formatted`, `numberFormattingInfo`, the formatting samples | Personal options → *Formats* → German (Germany), reload *Probe numbers*, `dump()` `cll_score` and `revenue`; switch back | The box's parser against what the form really sends |
 
+## Measured
+
+### P1 — what each kind hands over (2026-10-03, *Probe numbers*, web, en-US)
+
+| Column | `type` | `raw` | `formatted` | `attributes` |
+| --- | --- | --- | --- | --- |
+| `numberofemployees` | `Whole.None` | 250 | `250` | `Type: "integer"`, Min 0, Max 1000000000, **`Precision: 0`, `Format: "0"`**, ImeMode null |
+| `revenue` | `Currency` | 1500000 | `$1,500,000.00` | `Type: "money"`, Min 0, Max 100000000000000, `Precision: 2`, no `Format` |
+| `address1_latitude` | `FP` | 47.60621 | `47.60621` | `Type: "double"`, Min −90, Max 90, `Precision: 5` |
+| `cll_score` | `Decimal` | 72.5 | `72.50` | `Type: "decimal"`, Min 0, Max 100, `Precision: 2` (the casts agree: 0..100, 2) |
+| `cll_minseats` (Range) | `Whole.None` | 10 | `10` | `Type: "integer"`, Min 0, Max 500, `Precision: 0`, `Format: "0"` |
+
+- **`type` is the member, on every column.** None of the three type-group
+  hosts the rig models showed up as the group string or a wrong member here.
+- **Every number column carries `Precision` — a whole number's is 0.** The
+  design (and `_template`'s `--bind number` scaffold, and its rig) told whole
+  from fractional by "`Precision` on the fractional types, `Format` on a
+  whole number"; a whole column has both. **The test is `Precision === 0`**,
+  with `attributes.Type` (`integer`, `decimal`, `double`, `money`) as
+  corroboration and the exact `Whole.None` veto for a host with no
+  `attributes`.
+- **The declared range arrives on the bound property**, matching the
+  server's casts — no `EntityDefinitions` call needed. A system column's
+  declared range is its own, not the platform default for new columns
+  (`numberofemployees` 0..1e9, `revenue` 0..1e14).
+- **`formatted` carries the currency symbol** and the column's precision
+  (`72.50`, `47.60621`).
+- **A bound property has more members than the typings:** `errorCode`,
+  `notifications`, `predicted`, `predictionCitation`, `citationData`,
+  `isMasked`, `isControlLoading`. `context.parameters` also carries
+  `labelForPrefix`, `deviceSizeMode`, `viewportSizeMode`, `syncError`,
+  `isEmpty`, `scope`, `forceColumnLayout`, `autoExpand`.
+- **`upperValue` unmapped** is the eight-key shape (`type: null`,
+  `attributes: {}`, `security: {}`); **mapped**, it has the full fifteen keys
+  with its own range.
+- **An input the maker left unset is `raw: null`, `type: null` — its
+  manifest `default-value` does not arrive.** `style` (default `slider`) and
+  `valueBox` (default `show`) were `null` on every instance where the binding
+  named no value. The control reads `null` as the default.
+- **`numberFormattingInfo` has every member twice**, PascalCase and
+  camelCase.
+- **`context.formatting`:** `formatDecimal(v)` gives two places;
+  `formatCurrency(v, 2, '€')` → `€1,234.50`, `(…, 'EUR')` → `EUR1,234.50` (a
+  code is prefixed as written); **`formatCurrency(-1234.5)` → `($1,234.50)`**
+  — brackets, currency negative pattern 0.
+- A second pass arrives about 2.7 s after load with `updatedProperties:
+  ["orgSettings"]` and nothing else changed — a reason to keep renders cheap.
+
 ## Demo
 
 `full` is the candidate: no `<feature-usage>`, no Web API, nothing leaves the
