@@ -214,7 +214,7 @@ const marked = (key) => `resx:${key}`;
 const COLUMN = {
     valueType: 'Decimal',
     value: 1234.5,
-    typeGroup: ['Whole.None', 'Decimal', 'FP', 'Currency'],
+    typeGroup: ['Decimal', 'Whole.None', 'FP', 'Currency'],
     // Every input the manifest declares, as a form hands over a maker's blank.
     inputs: { style: 'slider', min: null, max: null, step: null, valueBox: 'show', unit: null, bands: null },
 };
@@ -632,6 +632,19 @@ const SEATS = {
     fire(thumb, 'input');
     check('currency while dragging: formatCurrency, not formatDecimal', money.calls().some((c) => c.startsWith('formatting.formatCurrency([300000')) && box(money).value.startsWith('$'), box(money).value);
 
+    // The rig formats `formatted` with the same formatter the control has, so
+    // the two agree; a form's carries the record's own currency, which only
+    // the platform knows. Hand over one only the platform could have made.
+    const recordCurrency = host.createContext({
+        getString: marked, ...COLUMN, column: 'revenue', valueType: 'Currency', value: 250000, minValue: 0, maxValue: 1000000, precision: 2,
+        inputs: { ...COLUMN.inputs },
+    });
+    recordCurrency.parameters.value.formatted = '€250,000.00';
+    const atRest = mount({ column: 'revenue', valueType: 'Currency', value: 250000, minValue: 0, maxValue: 1000000, precision: 2 });
+
+    atRest.instance.updateView(recordCurrency);
+    check('at rest the box shows the platform\'s formatted text, whatever currency it carries', box(atRest).value === '€250,000.00', box(atRest).value);
+
     const percent = mount({ ...SCORE, inputs: { unit: '%' } });
     check('a unit follows the value', box(percent).value === '72.50%', box(percent).value);
 }
@@ -704,6 +717,16 @@ const SEATS = {
 
     seats.update({ bound: { upperValue: { type: 'Whole.None', raw: 300, column: 'cll_maxseats', minValue: 0, maxValue: 500 } } });
     check('range: the form\'s change to the upper column is taken', box(seats, 'upper').value === '300' && upper.value === '300');
+
+    drag(seats, 320, 'upper');
+    drag(seats, 340, 'upper');
+    seats.update({ bound: { upperValue: { type: 'Whole.None', raw: 320, column: 'cll_maxseats', minValue: 0, maxValue: 500 } } });
+    check('range: a late echo of an older upper write does not move that thumb back', seats.outputs().upperValue === 340 && upper.value === '340', upper.value);
+
+    // A key press on a focused thumb can arrive as `change` alone; the order is kept there too.
+    lower.value = '480';
+    fire(lower, 'change');
+    check('range: a change with no input before it still stops at the other thumb', seats.outputs().value === 340, JSON.stringify(seats.outputs()));
 
     const unmapped = mount({ ...SEATS, bound: { upperValue: 'unmapped' } });
     check('range with no second column: the reason, and nothing to drag', q(unmapped, '.NumberSlider-note').textContent === marked('NumberSlider_Unmapped') && rangeOf(unmapped).disabled);

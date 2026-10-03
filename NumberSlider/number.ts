@@ -71,7 +71,9 @@ export function readColumn(attributes: Record<string, unknown> | undefined | nul
     let kind: Kind;
     if (precision !== null) {
         kind = precision > 0 ? 'fractional' : 'whole';
-    } else if (a.Format !== undefined || typeName === 'integer' || (type ?? '').trim() === 'Whole.None') {
+    } else if (a.Format !== undefined || typeName === 'integer') {
+        // `typeName` is `type` translated where there is no `attributes.Type`,
+        // so this is also the canvas veto: an exact `Whole.None`.
         kind = 'whole';
     } else {
         kind = 'unknown';
