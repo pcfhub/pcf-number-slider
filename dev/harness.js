@@ -21,7 +21,16 @@
      * the type group the manifest declares. The rig's text column unless
      * `setup.mjs --bind` rewrote this line for a number or a yes/no control.
      */
-    var COLUMN = { valueType: 'Decimal', value: 1234.5, typeGroup: ['Whole.None', 'Decimal', 'FP', 'Currency'] };
+    var COLUMN = {
+        valueType: 'Decimal',
+        value: 7.5,
+        typeGroup: ['Whole.None', 'Decimal', 'FP', 'Currency'],
+        minValue: 0,
+        maxValue: 10,
+        precision: 1,
+        // Every input the manifest declares, as a form hands over a maker's blank.
+        inputs: { style: 'slider', min: null, max: null, step: 0.5, valueBox: 'show', unit: null, bands: null },
+    };
 
     /** The platform's copy of the column, which is not the control's copy. */
     var columnValue = COLUMN.value;
