@@ -95,6 +95,30 @@
   <data name="NumberSlider_OutOfRange" xml:space="preserve">
     <value>Geben Sie eine Zahl zwischen {0} und {1} ein.</value>
   </data>
+  <data name="NumberSlider_From" xml:space="preserve">
+    <value>Von</value>
+  </data>
+  <data name="NumberSlider_To" xml:space="preserve">
+    <value>Bis</value>
+  </data>
+  <data name="NumberSlider_Decrease" xml:space="preserve">
+    <value>{0} verringern</value>
+  </data>
+  <data name="NumberSlider_Increase" xml:space="preserve">
+    <value>{0} erhöhen</value>
+  </data>
+  <data name="NumberSlider_Empty" xml:space="preserve">
+    <value>Kein Wert</value>
+  </data>
+  <data name="NumberSlider_Unmapped" xml:space="preserve">
+    <value>Wählen Sie eine Spalte für „Oberer Wert“, um den Stil „Bereich“ zu verwenden.</value>
+  </data>
+  <data name="NumberSlider_Outside" xml:space="preserve">
+    <value>Der gespeicherte Wert liegt außerhalb des Bereichs dieses Steuerelements von {0} bis {1}.</value>
+  </data>
+  <data name="NumberSlider_Order" xml:space="preserve">
+    <value>Der erste Wert darf nicht größer als der zweite sein.</value>
+  </data>
   <data name="upperValue_Name" xml:space="preserve">
     <value>Oberer Wert</value>
   </data>

@@ -319,91 +319,478 @@ if (typeof registration.ctor !== 'function') {
 }
 
 /* ======================================================================== *
- *  THE 0.0.1 PROBE BUILD — replaced, with the probe, at 0.1.0.
+ *  NUMBER SLIDER 0.1.0
  *
- *  What this build has to get right is small: register the probe under the
- *  bound column, log every pass, write on `change` and nowhere else, hand a
- *  clear back as null, and never write an unmapped upper column. The control's
- *  real suite is written with the control, after the form has answered.
+ *  Two halves. The decisions — what a column is, the scale, snapping, parsing,
+ *  bands, the echo guard — are loaded on their own through `dev/modules.js`
+ *  and asked directly. The control is then driven through the built bundle on
+ *  the rig's typed columns, model-driven and canvas, en-US and de-DE.
+ *
+ *  What a pass cannot prove: that a real form hands over these shapes (SPEC.md
+ *  P1–P11 measured them), that the thumb looks like Fluent's (the harness and
+ *  the screenshots), or that a phone drag moves the thumb and not the page
+ *  (P9, Not verified).
  * ======================================================================== */
 
-const probes = () => global.__pcfNumberSliderProbe || {};
-const ranges = (handle) => handle.container.querySelectorAll('input');
+const { createLoader } = require('./modules');
+const load = createLoader({ root: path.join(root, 'NumberSlider'), forbid: [[/^react/, 'stay free of React'], [/generated/, 'stay free of the manifest types']] });
+const N = load('number');
+const B = load('bands');
+const { EchoGuard } = load('echo');
 
-const plain = mount({ column: 'numberofemployees', valueType: 'Whole.None', value: 250 });
+const EN = { numberDecimalSeparator: '.', numberGroupSeparator: ',', negativeSign: '-', currencySymbol: '$' };
+const DE = { numberDecimalSeparator: ',', numberGroupSeparator: '.', negativeSign: '-', currencySymbol: '$' };
+const NBSP = String.fromCharCode(0xa0);
 
-check(
-    'the probe registers under the bound column, not under one global',
-    typeof probes().numberofemployees === 'object' && typeof probes().numberofemployees.dump === 'function',
-    Object.keys(probes()).join(', '),
-);
+/* ------------------------------------------------- number.ts: the column */
 
-plain.update({ value: 260 });
+{
+    const whole = N.readColumn({ Type: 'integer', Precision: 0, Format: '0', MinValue: 0, MaxValue: 500 }, 'Whole.None');
+    const decimal = N.readColumn({ Type: 'decimal', Precision: 2, MinValue: 0, MaxValue: 100 }, 'Decimal');
 
-const dumped = JSON.parse(probes().numberofemployees.dump());
+    check('a column with Precision 0 is whole (P1: every number column carries Precision)', whole.kind === 'whole' && whole.precision === 0);
+    check('Precision above 0 is fractional', decimal.kind === 'fractional' && decimal.precision === 2);
+    check('a declared range is kept', decimal.declared && decimal.declared.min === 0 && decimal.declared.max === 100);
+    check(
+        "the platform's default range for each type is no range at all",
+        [['integer', -2147483648, 2147483647], ['decimal', -100000000000, 100000000000], ['double', 0, 1000000000], ['money', -922337203685477, 922337203685477]]
+            .every(([Type, MinValue, MaxValue]) => N.readColumn({ Type, Precision: 2, MinValue, MaxValue }, null).declared === null),
+    );
+    check('a money column is shown as currency', N.readColumn({ Type: 'money', Precision: 2 }, 'Currency').currency === true);
+    check('canvas, no attributes: an exact Whole.None is still whole', N.readColumn(undefined, 'Whole.None').kind === 'whole');
+    check('canvas: Decimal says nothing either way', N.readColumn(undefined, 'Decimal').kind === 'unknown');
+    check(
+        'a group string is not evidence of anything',
+        N.readColumn(undefined, 'Whole.None,Decimal,FP,Currency').kind === 'unknown',
+    );
 
-check(
-    'dump() is JSON holding the first pass in full and every pass after it',
-    dumped.probe === '0.0.1' && dumped.first.value.attributes.Format === '0' && dumped.passCount === 2
-        && dumped.passes[1].raw === 260
-        && dumped.first.formatting.present === true && dumped.first.numberFormattingInfo.numberDecimalSeparator === '.',
-    `${dumped.passCount} pass(es) logged`,
-);
+    const merged = N.mergeColumns(
+        N.readColumn({ Type: 'integer', Precision: 0, MinValue: 0, MaxValue: 500 }, null),
+        N.readColumn({ Type: 'decimal', Precision: 2, MinValue: 100, MaxValue: 1000 }, null),
+    );
+    check('a range of two columns holds what both can', merged.kind === 'whole' && merged.precision === 0 && merged.declared.min === 100 && merged.declared.max === 500);
+}
 
-check(
-    'a second instance on another column registers beside it',
-    (() => {
-        mount({ column: 'revenue', valueType: 'Currency', value: 1500 });
-        return typeof probes().revenue === 'object' && typeof probes().numberofemployees === 'object';
-    })(),
-);
+/* -------------------------------------------------- number.ts: the scale */
 
-const slider = ranges(plain)[0];
+{
+    const decimal = N.readColumn({ Type: 'decimal', Precision: 2, MinValue: 0, MaxValue: 100 }, null);
+    const whole = N.readColumn({ Type: 'integer', Precision: 0, MinValue: 0, MaxValue: 500 }, null);
+    const open = N.readColumn({ Type: 'decimal', Precision: 2, MinValue: -100000000000, MaxValue: 100000000000 }, null);
+    const tenths = N.readColumn({ Type: 'decimal', Precision: 1, MinValue: 0, MaxValue: 10 }, null);
 
-slider.value = '300';
-slider.dispatchEvent({ type: 'input', target: slider, preventDefault() {} });
+    const same = (scale, min, max, step) => scale.min === min && scale.max === max && scale.step === step;
 
-check('dragging (input) writes nothing', plain.notifications() === 0);
+    check('blank min and max: the column\'s own range', same(N.resolveScale(decimal, null, null, null), 0, 100, 1));
+    check('no range declared: 0 to 100', same(N.resolveScale(open, null, null, null), 0, 100, 1));
+    check('a maker range inside the column\'s is kept', same(N.resolveScale(decimal, 10, 50, 0.5), 10, 50, 0.5));
+    check('a maker range wider than the column\'s is cut to it', same(N.resolveScale(decimal, -50, 1000, null), 0, 100, 1));
+    check('a maker range with nothing between its ends falls back to the column\'s', same(N.resolveScale(decimal, 60, 40, null), 0, 100, 1));
+    check('a whole column\'s step is whole', N.resolveScale(whole, null, null, 0.5).step === 1 && N.resolveScale(whole, null, null, 2.6).step === 3);
+    check('a step finer than the column stores is raised to it', N.resolveScale(tenths, null, null, 0.01).step === 0.1);
+    check('a step longer than the scale is cut to it', N.resolveScale(decimal, 0, 10, 50).step === 10);
+    check('a zero or negative step is the default', N.resolveScale(decimal, null, null, 0).step === 1 && N.resolveScale(decimal, null, null, -2).step === 1);
 
-slider.dispatchEvent({ type: 'change', target: slider, preventDefault() {} });
+    const halves = N.resolveScale(decimal, 0, 100, 0.5);
+    check('snap: onto the step grid', N.snap(37.3, halves) === 37.5 && N.snap(37.2, halves) === 37);
+    check('snap: inside the scale', N.snap(-5, halves) === 0 && N.snap(250, halves) === 100);
+    check('snap: 0.1 + 0.2 does not leak through', N.snap(0.30000000000000004, N.resolveScale(decimal, 0, 1, 0.1)) === 0.3);
+    check('snap: the grid starts at min, not at 0', N.snap(10, N.resolveScale(decimal, 3, 100, 5)) === 8);
+    check('snap: a grid that misses max stops on its last step, as the native range does', N.snap(100, N.resolveScale(decimal, 0, 100, 7)) === 98);
+    check('storable: rounded as the column keeps it (P3: 1.23456 came back 1.23)', N.storable(1.23456, decimal) === 1.23);
+    check('percent: clamped to the rail', N.percent(150, halves) === 100 && N.percent(-1, halves) === 0 && N.percent(25, halves) === 25);
+}
 
-check(
-    'releasing (change) writes once',
-    plain.notifications() === 1 && plain.outputs().value === 300,
-    JSON.stringify(plain.outputs()),
-);
+/* ------------------------------------------------- number.ts: the text */
 
-probes().numberofemployees.write(null);
+{
+    check('parse: en-US grouping', N.parseNumber('1,234.5', EN) === 1234.5);
+    check('parse: de-DE grouping', N.parseNumber('1.234,5', DE) === 1234.5);
+    check('parse: de-DE 1.5 is not fifteen and not one and a half', N.parseNumber('1.5', DE) === undefined);
+    check('parse: an empty box is null, a clear', N.parseNumber('  ', EN) === null);
+    check('parse: not a number is undefined', N.parseNumber('abc', EN) === undefined && N.parseNumber('1.2.3', EN) === undefined);
+    check('parse: the currency symbol is dropped', N.parseNumber('$1,500.00', EN) === 1500);
+    check('parse: bracketed is negative, as formatCurrency writes it', N.parseNumber('($1,234.50)', EN) === -1234.5);
+    check('parse: the unit is dropped', N.parseNumber('45 km', EN, 'km') === 45 && N.parseNumber('72.5%', EN, '%') === 72.5);
+    check('parse: a minus sign', N.parseNumber('-3', EN) === -3);
+    check('plain: the user\'s decimal separator, no grouping', N.plain(1234.5, DE) === '1234,5');
+    check('unit: none before %', N.withUnit('72.50', '%') === '72.50%');
+    check('unit: a no-break space before a word', N.withUnit('45', 'km') === `45${NBSP}km`);
+    check('unit: blank is nothing', N.withUnit('45', '  ') === '45' && N.withUnit('45', null) === '45');
+    check('an input\'s number: the demo hands a default over as a string', N.toNumber('1000') === 1000 && N.toNumber(' ') === null && N.toNumber(null) === null && N.toNumber('x') === null && N.toNumber(7) === 7);
+}
 
-check('a probe write of null is handed back as null, not "no change"', plain.outputs().value === null, JSON.stringify(plain.outputs()));
+/* ------------------------------------------------------------- bands.ts */
 
-const unmapped = mount({ column: 'cll_minseats', valueType: 'Whole.None', value: 10, inputs: { style: 'range' }, bound: { upperValue: 'unmapped' } });
+{
+    const accepts = (c) => /^#[0-9a-f]{3,8}$/i.test(c);
+    const bands = B.parseBands('80 warning; 50 danger;100 success', accepts);
 
-probes().cll_minseats.writeUpper(20);
+    check('bands: sorted, lowest first', bands.map((b) => b.upTo).join() === '50,80,100');
+    check('bands: a role name is its Fluent token, with a fallback', bands[0].color.startsWith('var(--colorStatusDangerBackground3,'));
+    check('bands: a colour the browser accepts is kept', B.parseBands('10 #ff0000', accepts)[0].color === '#ff0000');
+    check('bands: anything else is dropped, url() included', B.parseBands('10 url(x); 20 nonsense; thirty red', accepts).length === 0);
+    check('bands: a value up to a threshold takes its colour', B.bandFor(bands, 50) === bands[0].color && B.bandFor(bands, 50.01) === bands[1].color);
+    check('bands: above the last threshold, the last colour', B.bandFor(bands, 500) === bands[2].color);
+    check('bands: no value, no colour', B.bandFor(bands, null) === null && B.bandFor([], 5) === null);
+}
 
-check(
-    'an unmapped upper column is never handed back',
-    !('upperValue' in unmapped.outputs()),
-    JSON.stringify(unmapped.outputs()),
-);
+/* -------------------------------------------------------------- echo.ts */
 
-const mapped = mount({
-    column: 'cll_minseats',
-    valueType: 'Whole.None',
-    value: 10,
+{
+    const guard = new EchoGuard();
+
+    guard.take(10, null);
+    guard.wrote(30);
+    guard.wrote(40);
+    check('echo: an older write arriving late is not taken', guard.take(30, 40) === false);
+    check('echo: nor the newest', guard.take(40, 40) === false);
+    check('echo: a value nobody here wrote is the form\'s', guard.take(55, 40) === true);
+    check('echo: the same value twice is not news (the demo re-renders its preset)', guard.take(55, 70) === false);
+}
+
+/* ------------------------------------------------------- the control */
+
+// `CSS.supports` for the bands' custom colours: what a browser would accept.
+global.CSS = { supports: (_property, value) => /^(#[0-9a-f]{3,8}|rgb\([\d\s,]+\))$/i.test(value) };
+
+const fire = (target, type, extra) => target.dispatchEvent(Object.assign({ type, target, preventDefault() {} }, extra));
+const q = (handle, selector) => handle.find(selector);
+const box = (handle, which = 'lower') => q(handle, `.NumberSlider-input--${which}`);
+const rangeOf = (handle, which = 'lower') => q(handle, `.NumberSlider-range--${which}`);
+const has = (handle, name) => handle.container.classList.contains(name);
+
+/** Drag a thumb to `value` and let go: `input` while it moves, `change` once. */
+function drag(handle, value, which = 'lower') {
+    const input = rangeOf(handle, which);
+
+    input.value = String(value);
+    fire(input, 'input');
+    fire(input, 'change');
+}
+
+/** Type into a box and press Enter. */
+function type(handle, text, which = 'lower') {
+    const input = box(handle, which);
+
+    input.focus();
+    input.value = text;
+    fire(input, 'keydown', { key: 'Enter' });
+}
+
+const SCORE = { column: 'cll_score', valueType: 'Decimal', value: 72.5, minValue: 0, maxValue: 100, precision: 2, label: 'Score' };
+const SEATS = {
+    column: 'cll_minseats', valueType: 'Whole.None', value: 10, minValue: 0, maxValue: 500, label: 'Seats',
     inputs: { style: 'range' },
     bound: { upperValue: { type: 'Whole.None', raw: 400, column: 'cll_maxseats', minValue: 0, maxValue: 500 } },
-});
+};
 
-probes().cll_minseats.writeBoth(15, 450);
+/* The slider */
+{
+    const score = mount({ ...SCORE, inputs: { step: 0.5 } });
+    const thumb = rangeOf(score);
 
-check(
-    'a mapped one is, beside the value, in the same notify',
-    mapped.outputs().value === 15 && mapped.outputs().upperValue === 450,
-    JSON.stringify(mapped.outputs()),
-);
+    check(
+        'slider: the native range carries the column\'s scale and the value',
+        thumb.min === '0' && thumb.max === '100' && thumb.step === '0.5' && thumb.value === '72.5',
+        `${thumb.min}..${thumb.max} step ${thumb.step} = ${thumb.value}`,
+    );
+    check('slider: the box shows the platform\'s own formatted value at rest', box(score).value === '72.50', box(score).value);
+    check('slider: the fill reaches the value', q(score, '.NumberSlider-fill').style.width === '72.5%', q(score, '.NumberSlider-fill').style.width);
+    check('slider: aria-valuetext reads the value as shown', thumb.getAttribute('aria-valuetext') === '72.50' && thumb.getAttribute('aria-label') === 'Score');
 
-check('Range shows two ranges; every other style one', ranges(mapped).length === 2 && !ranges(mapped)[1].hidden && ranges(plain)[1].hidden);
+    thumb.value = '80';
+    fire(thumb, 'input');
+
+    check('a drag (input) writes nothing', score.notifications() === 0);
+    check('but the box and the fill follow it', box(score).value === '80.00' && q(score, '.NumberSlider-fill').style.width === '80%', box(score).value);
+
+    fire(thumb, 'change');
+
+    check('letting go (change) writes once', score.notifications() === 1 && score.outputs().value === 80, JSON.stringify(score.outputs()));
+
+    drag(score, 81);
+    drag(score, 81.5);
+    check('each key press — input and change (P8) — writes once', score.notifications() === 3 && score.outputs().value === 81.5);
+
+    score.update({ value: 81 });
+    check('a late echo of an older write does not move the thumb back', score.outputs().value === 81.5 && thumb.value === '81.5' && box(score).value === '81.50', box(score).value);
+
+    score.update({ value: 30 });
+    check('a value nobody here wrote is the form\'s, and is taken', thumb.value === '30' && box(score).value === '30.00' && score.notifications() === 3);
+
+    check(
+        'the value is shown through context.formatting while it is not the platform\'s',
+        score.calls().some((call) => call.startsWith('formatting.formatDecimal([80,2]')),
+        score.calls().filter((c) => c.startsWith('formatting')).slice(0, 3).join(' '),
+    );
+}
+
+{
+    const preset = mount({ ...SCORE, value: 50 });
+
+    drag(preset, 70);
+    preset.update({ value: 50 });
+    check('the demo re-rendering its preset value does not wipe what was chosen', preset.outputs().value === 70 && rangeOf(preset).value === '70');
+}
+
+{
+    const seats = mount({ column: 'cll_minseats', valueType: 'Whole.None', value: 10, minValue: 0, maxValue: 500, inputs: { step: 0.5 } });
+
+    check('a whole column\'s step is whole', rangeOf(seats).step === '1');
+    drag(seats, 3.6);
+    check('and what it writes is whole', seats.outputs().value === 4);
+}
+
+{
+    const open = mount({ column: 'cll_open', valueType: 'Decimal', value: 12 });
+    check('the platform\'s default range is ignored: 0 to 100', rangeOf(open).min === '0' && rangeOf(open).max === '100');
+
+    const maker = mount({ ...SCORE, inputs: { min: 10, max: 50 } });
+    check('a maker range inside the column\'s is the scale', rangeOf(maker).min === '10' && rangeOf(maker).max === '50');
+
+    const wide = mount({ ...SCORE, inputs: { min: -10, max: 1000 } });
+    check('one wider is cut to the column\'s', rangeOf(wide).min === '0' && rangeOf(wide).max === '100');
+
+    const demo = mount({ column: 'revenue', valueType: 'Currency', value: 1500000, inputs: { min: '0', max: '1000000', step: '1000' } });
+    check('inputs handed over as strings (PCFHub\'s demo) are numbers', rangeOf(demo).max === '1000000' && rangeOf(demo).step === '1000', rangeOf(demo).max);
+}
+
+/* Outside the range, empty, and the box */
+{
+    const outside = mount({ ...SCORE, value: 150, maxValue: 500, inputs: { max: 100 } });
+    const note = q(outside, '.NumberSlider-note');
+
+    check('a stored value outside the scale is said, neutrally', !note.hidden && note.textContent === marked('NumberSlider_Outside'), note.textContent);
+    check('and shown as it is', box(outside).value === '150.00');
+    check('and never rewritten', outside.notifications() === 0);
+
+    const empty = mount({ ...SCORE, value: null });
+    check('empty: the thumb waits at the minimum, muted', has(empty, 'NumberSlider--empty') && rangeOf(empty).value === '0');
+    check('empty: the box is empty, and says so to a screen reader', box(empty).value === '' && rangeOf(empty).getAttribute('aria-valuetext') === marked('NumberSlider_Empty'));
+    check('empty: nothing is written by showing it', empty.notifications() === 0);
+}
+
+{
+    const typed = mount(SCORE);
+
+    box(typed).focus();
+    check('focus: the box holds the plain number to edit', box(typed).value === '72.5', box(typed).value);
+
+    type(typed, '12.5');
+    check('Enter writes a typed value', typed.outputs().value === 12.5 && typed.notifications() === 1);
+
+    type(typed, '1.23456');
+    check('rounded as the column keeps it before it is written', typed.outputs().value === 1.23);
+
+    const message = q(typed, '.NumberSlider-message');
+
+    type(typed, 'abc');
+    check('not a number: refused, with the reason, and nothing written', message.textContent === marked('NumberSlider_NotANumber') && typed.notifications() === 2 && box(typed).value === 'abc');
+    check('the box is marked invalid', box(typed).getAttribute('aria-invalid') === 'true' && has(typed, 'NumberSlider--invalid'));
+
+    type(typed, '150');
+    check('outside the range: refused at the box, not at Save (P3)', message.textContent === marked('NumberSlider_OutOfRange') && typed.notifications() === 2);
+
+    fire(box(typed), 'keydown', { key: 'Escape' });
+    check('Escape puts the column\'s value back and drops the refusal', box(typed).value === '1.23' && message.hidden && !has(typed, 'NumberSlider--invalid'));
+
+    type(typed, '');
+    check('an empty box clears the column: null, not "no change"', 'value' in typed.outputs() && typed.outputs().value === null && typed.notifications() === 3);
+
+    box(typed).value = '40';
+    box(typed).blur();
+    check('leaving the box writes too', typed.outputs().value === 40 && typed.notifications() === 4);
+
+    const whole = mount({ column: 'cll_minseats', valueType: 'Whole.None', value: 10, minValue: 0, maxValue: 500 });
+    type(whole, '3.5');
+    check('a fraction in a whole column is refused, not rounded', q(whole, '.NumberSlider-message').textContent === marked('NumberSlider_WholeOnly') && whole.notifications() === 0);
+
+    const outsideText = mount({ ...SCORE, getString: (key) => (key === 'NumberSlider_OutOfRange' ? 'Enter a number from {0} to {1}.' : marked(key)) });
+    type(outsideText, '500');
+    check('the refusal names the range in the user\'s format', q(outsideText, '.NumberSlider-message').textContent === 'Enter a number from 0.00 to 100.00.', q(outsideText, '.NumberSlider-message').textContent);
+}
+
+{
+    const german = mount({ ...SCORE, locale: 'de-DE' });
+
+    box(german).focus();
+    check('de-DE: the box edits with a comma', box(german).value === '72,5', box(german).value);
+    type(german, '1.5');
+    check('de-DE: 1.5 is refused rather than read as fifteen', german.notifications() === 0);
+    type(german, '12,5');
+    check('de-DE: 12,5 is twelve and a half', german.outputs().value === 12.5);
+}
+
+{
+    const money = mount({ column: 'revenue', valueType: 'Currency', value: 250000, minValue: 0, maxValue: 1000000, precision: 2, inputs: { step: 1000 } });
+
+    check('currency at rest: the platform\'s formatted, symbol and all', box(money).value.startsWith('$'), box(money).value);
+
+    const thumb = rangeOf(money);
+    thumb.value = '300000';
+    fire(thumb, 'input');
+    check('currency while dragging: formatCurrency, not formatDecimal', money.calls().some((c) => c.startsWith('formatting.formatCurrency([300000')) && box(money).value.startsWith('$'), box(money).value);
+
+    const percent = mount({ ...SCORE, inputs: { unit: '%' } });
+    check('a unit follows the value', box(percent).value === '72.50%', box(percent).value);
+}
+
+/* Read-only, access, errors */
+{
+    const disabled = mount({ ...SCORE, disabled: true });
+    check('a read-only form disables the thumb and the box (P7)', rangeOf(disabled).disabled && box(disabled).disabled && has(disabled, 'NumberSlider--disabled'));
+
+    const secured = mount({ ...SCORE, security: 'read-only' });
+    check('so does a column the user may not edit', rangeOf(secured).disabled && box(secured).disabled);
+
+    const denied = mount({ ...SCORE, security: 'no-access' });
+    check(
+        'no read access: the control is replaced by the reason, not by an empty slider',
+        q(denied, '.NumberSlider-body').hidden && q(denied, '.NumberSlider-note').textContent === marked('NumberSlider_NoAccess'),
+    );
+
+    const modelDriven = mount({ ...SCORE, error: true });
+    check(
+        'a platform error on a form: marked, not printed — the form prints it under the field',
+        has(modelDriven, 'NumberSlider--invalid') && q(modelDriven, '.NumberSlider-message').hidden,
+    );
+
+    const canvas = mount({ ...SCORE, host: 'canvas', error: true });
+    check(
+        'in a canvas app, which prints nothing: printed',
+        !q(canvas, '.NumberSlider-message').hidden && q(canvas, '.NumberSlider-message').textContent === 'Enter a value with at least three characters.',
+    );
+}
+
+/* Canvas */
+{
+    const canvas = mount({ column: 'Quantity', valueType: 'Whole.None', value: 3, host: 'canvas', inputs: { step: 0.5 } });
+    check('canvas: no attributes, so the default scale', rangeOf(canvas).max === '100');
+    check('canvas: an exact Whole.None still forbids a fraction', rangeOf(canvas).step === '1');
+
+    const group = mount({ column: 'Quantity', valueType: 'Whole.None', value: 3, host: 'canvas', typeReport: 'group', inputs: { step: 0.5 } });
+    check('canvas, a group string for a type: the maker\'s step stands', rangeOf(group).step === '0.5');
+}
+
+/* The range */
+{
+    const seats = mount(SEATS);
+    const lower = rangeOf(seats);
+    const upper = rangeOf(seats, 'upper');
+    const fill = q(seats, '.NumberSlider-fill');
+
+    check('range: two thumbs and two boxes', !upper.hidden && !q(seats, '.NumberSlider-field--upper').hidden && box(seats, 'upper').value === '400');
+    check('range: the fill runs between the thumbs', fill.style.insetInlineStart === '2%' && fill.style.width === '78%', `${fill.style.insetInlineStart} + ${fill.style.width}`);
+    check('range: each thumb is named for its end', lower.getAttribute('aria-label') === `Seats, ${marked('NumberSlider_From')}` && upper.getAttribute('aria-label') === `Seats, ${marked('NumberSlider_To')}`);
+
+    lower.value = '450';
+    fire(lower, 'input');
+    check('range: a thumb dragged past the other stops at it', lower.value === '400');
+    fire(lower, 'change');
+    check('range: and writes where it stopped', seats.outputs().value === 400);
+
+    const before = seats.notifications();
+
+    drag(seats, 5, 'upper');
+    check('range: the upper thumb cannot pass below the lower — it stops where it was, and writes nothing', upper.value === '400' && seats.notifications() === before);
+
+    drag(seats, 20);
+    drag(seats, 450, 'upper');
+    check('range: both columns in one getOutputs (P5)', seats.outputs().value === 20 && seats.outputs().upperValue === 450, JSON.stringify(seats.outputs()));
+
+    type(seats, '460');
+    check('range: a typed lower above the upper is refused', q(seats, '.NumberSlider-message').textContent === marked('NumberSlider_Order') && seats.outputs().value === 20);
+
+    seats.update({ bound: { upperValue: { type: 'Whole.None', raw: 300, column: 'cll_maxseats', minValue: 0, maxValue: 500 } } });
+    check('range: the form\'s change to the upper column is taken', box(seats, 'upper').value === '300' && upper.value === '300');
+
+    const unmapped = mount({ ...SEATS, bound: { upperValue: 'unmapped' } });
+    check('range with no second column: the reason, and nothing to drag', q(unmapped, '.NumberSlider-note').textContent === marked('NumberSlider_Unmapped') && rangeOf(unmapped).disabled);
+    check('and an unmapped column is never handed back', !('upperValue' in unmapped.outputs()));
+
+    const lockedUpper = mount({ ...SEATS, bound: { upperValue: { ...SEATS.bound.upperValue, security: 'read-only' } } });
+    check('range: one column the user cannot edit locks both thumbs', rangeOf(lockedUpper).disabled && rangeOf(lockedUpper, 'upper').disabled);
+
+    const single = mount(SCORE);
+    check('every other style: one thumb, one box', rangeOf(single, 'upper').hidden && q(single, '.NumberSlider-field--upper').hidden);
+}
+
+/* The stepper */
+{
+    const stepper = mount({ column: 'cll_minseats', valueType: 'Whole.None', value: 5, minValue: 0, maxValue: 10, label: 'Quantity', inputs: { style: 'stepper' } });
+    const up = q(stepper, '.NumberSlider-step--up');
+    const down = q(stepper, '.NumberSlider-step--down');
+
+    fire(up, 'click');
+    check('stepper: + writes one step up', stepper.outputs().value === 6 && stepper.notifications() === 1);
+    fire(down, 'click');
+    fire(down, 'click');
+    check('stepper: − writes one step down, each press', stepper.outputs().value === 4 && stepper.notifications() === 3);
+    check('stepper: the buttons are named for the field', up.getAttribute('aria-label') === marked('NumberSlider_Increase'));
+
+    const input = box(stepper);
+    check('stepper: the box is a spinbutton', input.getAttribute('role') === 'spinbutton' && input.getAttribute('aria-valuenow') === '4' && input.getAttribute('aria-valuemax') === '10');
+    input.focus();
+    fire(input, 'keydown', { key: 'ArrowUp' });
+    check('stepper: ArrowUp in the box steps', stepper.outputs().value === 5 && input.value === '5');
+
+    const atMin = mount({ column: 'cll_minseats', valueType: 'Whole.None', value: 0, minValue: 0, maxValue: 10, inputs: { style: 'stepper' } });
+    check('stepper: − is off at the minimum', q(atMin, '.NumberSlider-step--down').disabled && !q(atMin, '.NumberSlider-step--up').disabled);
+
+    const fromEmpty = mount({ column: 'cll_minseats', valueType: 'Whole.None', value: null, minValue: 0, maxValue: 10, inputs: { style: 'stepper' } });
+    fire(q(fromEmpty, '.NumberSlider-step--up'), 'click');
+    check('stepper: an empty column starts at the minimum', fromEmpty.outputs().value === 0);
+
+    check('a slider has no role on its box', box(mount(SCORE)).getAttribute('role') === null);
+}
+
+/* The gauges */
+{
+    const bar = mount({ ...SCORE, inputs: { style: 'bar', bands: '50 danger; 80 warning; 100 success' } });
+    const meter = q(bar, '.NumberSlider-meter');
+
+    check('bar: a meter, with its value and range', meter.getAttribute('role') === 'meter' && meter.getAttribute('aria-valuenow') === '72.5' && meter.getAttribute('aria-valuemax') === '100');
+    check('bar: the fill and the value text', q(bar, '.NumberSlider-meter-fill').style.width === '72.5%' && q(bar, '.NumberSlider-meter-text').textContent === '72.50');
+    check('bar: the band colour for the value', bar.container.style.getPropertyValue('--NumberSlider-band').startsWith('var(--colorStatusWarningBackground3'));
+    check('bar: nothing to drag or type', rangeOf(bar).disabled && box(bar).disabled && bar.notifications() === 0);
+    check('bar: a gauge is not a disabled control, so it is not drawn as one', !has(bar, 'NumberSlider--disabled'));
+
+    const arc = mount({ ...SCORE, inputs: { style: 'arc' } });
+    check('arc: the value is the dash length', q(arc, '.NumberSlider-arc-value').getAttribute('stroke-dasharray') === '72.5 100');
+
+    const zero = mount({ ...SCORE, value: 0, inputs: { style: 'arc' } });
+    check('arc: at zero no dot is drawn', q(zero, '.NumberSlider-arc-value').getAttribute('visibility') === 'hidden');
+
+    const over = mount({ ...SCORE, value: 150, maxValue: 500, inputs: { style: 'bar', max: 100 } });
+    check('a gauge over its maximum is full, and says nothing', q(over, '.NumberSlider-meter-fill').style.width === '100%' && q(over, '.NumberSlider-note').hidden);
+
+    const emptyBar = mount({ ...SCORE, value: null, inputs: { style: 'bar' } });
+    check('an empty gauge reads as empty', q(emptyBar, '.NumberSlider-meter-text').textContent === '—' && q(emptyBar, '.NumberSlider-meter').getAttribute('aria-valuetext') === marked('NumberSlider_Empty'));
+}
+
+/* Bands, the box switch, theme, direction, visibility */
+{
+    const banded = mount({ ...SCORE, value: 30, inputs: { bands: '50 #ff0000; 100 url(x)' } });
+    check('a custom colour is used', banded.container.style.getPropertyValue('--NumberSlider-band') === '#ff0000');
+    banded.update({ value: 90 });
+    check('a band the browser would not accept is dropped: the last good one carries on', banded.container.style.getPropertyValue('--NumberSlider-band') === '#ff0000');
+
+    const plainSlider = mount(SCORE);
+    check('no bands: no colour is set, so the accent and its hover apply', plainSlider.container.style.getPropertyValue('--NumberSlider-band') === '');
+
+    const ranged = mount({ ...SEATS, inputs: { style: 'range', bands: '50 danger' } });
+    check('a range is not coloured by a band', ranged.container.style.getPropertyValue('--NumberSlider-band') === '');
+
+    check('valueBox hide', has(mount({ ...SCORE, inputs: { valueBox: 'hide' } }), 'NumberSlider--no-box'));
+    check('valueBox blank is show', !has(mount({ ...SCORE, inputs: { valueBox: null } }), 'NumberSlider--no-box'));
+    check('style blank is slider', has(mount({ ...SCORE, inputs: { style: null } }), 'NumberSlider--slider'));
+    check('dark theme', has(mount({ ...SCORE, dark: true }), 'NumberSlider--dark'));
+    check('right to left', mount({ ...SCORE, rtl: true }).container.dir === 'rtl');
+    check('not visible', has(mount({ ...SCORE, visible: false }), 'NumberSlider--hidden'));
+}
+
+disposeAll();
 
 /* ---------------------------------------------------- what destroy owes */
 

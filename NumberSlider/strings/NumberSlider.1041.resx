@@ -95,6 +95,30 @@
   <data name="NumberSlider_OutOfRange" xml:space="preserve">
     <value>{0} から {1} までの数値を入力してください。</value>
   </data>
+  <data name="NumberSlider_From" xml:space="preserve">
+    <value>下限</value>
+  </data>
+  <data name="NumberSlider_To" xml:space="preserve">
+    <value>上限</value>
+  </data>
+  <data name="NumberSlider_Decrease" xml:space="preserve">
+    <value>{0} を減らす</value>
+  </data>
+  <data name="NumberSlider_Increase" xml:space="preserve">
+    <value>{0} を増やす</value>
+  </data>
+  <data name="NumberSlider_Empty" xml:space="preserve">
+    <value>値なし</value>
+  </data>
+  <data name="NumberSlider_Unmapped" xml:space="preserve">
+    <value>範囲スタイルを使用するには、[上限値] の列を選択してください。</value>
+  </data>
+  <data name="NumberSlider_Outside" xml:space="preserve">
+    <value>保存されている値は、このコントロールの範囲 ({0} から {1}) の外にあります。</value>
+  </data>
+  <data name="NumberSlider_Order" xml:space="preserve">
+    <value>最初の値を 2 番目の値より大きくすることはできません。</value>
+  </data>
   <data name="upperValue_Name" xml:space="preserve">
     <value>上限値</value>
   </data>

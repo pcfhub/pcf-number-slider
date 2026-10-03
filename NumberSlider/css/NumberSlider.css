@@ -60,6 +60,25 @@
     --NumberSlider-curve-decelerate: var(--curveDecelerateMid, cubic-bezier(0, 0, 0, 1));
     --NumberSlider-curve-ease: var(--curveEasyEase, cubic-bezier(0.33, 0, 0.67, 1));
 
+    /* The slider: Fluent v9 Slider's own tokens and sizes (`medium`), read from
+       `@fluentui/react-slider`'s styles rather than a screenshot. */
+    --NumberSlider-accent: var(--colorCompoundBrandBackground, #0f6cbd);
+    --NumberSlider-accent-hover: var(--colorCompoundBrandBackgroundHover, #115ea3);
+    --NumberSlider-accent-pressed: var(--colorCompoundBrandBackgroundPressed, #0f548c);
+    --NumberSlider-rail: var(--colorNeutralStrokeAccessible, #616161);
+    --NumberSlider-rail-disabled: var(--colorNeutralBackgroundDisabled, #f0f0f0);
+    --NumberSlider-thumb-ring: var(--colorNeutralBackground1, #ffffff);
+    --NumberSlider-thumb-border: var(--colorNeutralStroke1, #d1d1d1);
+    --NumberSlider-focus: var(--colorStrokeFocus2, #000000);
+    --NumberSlider-meter-rail: var(--colorNeutralBackground6, #e6e6e6);
+    --NumberSlider-foreground-note: var(--colorNeutralForeground3, #616161);
+    --NumberSlider-button: var(--colorNeutralBackground1, #ffffff);
+    --NumberSlider-button-hover: var(--colorNeutralBackground1Hover, #f5f5f5);
+    --NumberSlider-button-pressed: var(--colorNeutralBackground1Pressed, #e0e0e0);
+    --NumberSlider-button-stroke: var(--colorNeutralStroke1, #d1d1d1);
+    --NumberSlider-thumb: 20px;
+    --NumberSlider-rail-size: 4px;
+
     display: block;
     width: 100%;
     box-sizing: border-box;
@@ -92,6 +111,20 @@
     --NumberSlider-foreground-placeholder: var(--colorNeutralForeground4, #999999);
     --NumberSlider-foreground-disabled: var(--colorNeutralForegroundDisabled, #5c5c5c);
     --NumberSlider-foreground-danger: var(--colorPaletteRedForeground1, #e37d80);
+    --NumberSlider-accent: var(--colorCompoundBrandBackground, #479ef5);
+    --NumberSlider-accent-hover: var(--colorCompoundBrandBackgroundHover, #62abf5);
+    --NumberSlider-accent-pressed: var(--colorCompoundBrandBackgroundPressed, #2886de);
+    --NumberSlider-rail: var(--colorNeutralStrokeAccessible, #adadad);
+    --NumberSlider-rail-disabled: var(--colorNeutralBackgroundDisabled, #141414);
+    --NumberSlider-thumb-ring: var(--colorNeutralBackground1, #292929);
+    --NumberSlider-thumb-border: var(--colorNeutralStroke1, #666666);
+    --NumberSlider-focus: var(--colorStrokeFocus2, #ffffff);
+    --NumberSlider-meter-rail: var(--colorNeutralBackground6, #333333);
+    --NumberSlider-foreground-note: var(--colorNeutralForeground3, #adadad);
+    --NumberSlider-button: var(--colorNeutralBackground1, #292929);
+    --NumberSlider-button-hover: var(--colorNeutralBackground1Hover, #3d3d3d);
+    --NumberSlider-button-pressed: var(--colorNeutralBackground1Pressed, #1f1f1f);
+    --NumberSlider-button-stroke: var(--colorNeutralStroke1, #666666);
 }
 
 /*
@@ -272,6 +305,377 @@
 }
 
 /*
+ * The layout: one row that wraps. The track takes what is left after the box,
+ * and below about 260px the box wraps under it rather than squeezing the track
+ * to nothing — flex-basis does it, so no width has to be measured. A range puts
+ * the track on a row of its own and the two boxes under its two ends.
+ */
+.NumberSlider .NumberSlider-body {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacingVerticalS, 8px) var(--spacingHorizontalM, 12px);
+    max-width: 100%;
+}
+
+.NumberSlider .NumberSlider-body[hidden] {
+    display: none;
+}
+
+.NumberSlider .NumberSlider-side {
+    display: flex;
+    flex: 0 1 7.5em;
+    align-items: center;
+    gap: var(--spacingHorizontalXS, 4px);
+    min-width: 5.5em;
+}
+
+.NumberSlider .NumberSlider-side .NumberSlider-field {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.NumberSlider .NumberSlider-field--upper {
+    flex: 0 1 7.5em;
+    min-width: 5.5em;
+}
+
+.NumberSlider--range .NumberSlider-body {
+    justify-content: space-between;
+}
+
+.NumberSlider--range .NumberSlider-track {
+    flex-basis: 100%;
+}
+
+.NumberSlider--stepper .NumberSlider-side {
+    flex: 0 1 14em;
+}
+
+/* Each style shows its own parts. */
+.NumberSlider--stepper .NumberSlider-track,
+.NumberSlider--bar .NumberSlider-track,
+.NumberSlider--arc .NumberSlider-track,
+.NumberSlider--slider .NumberSlider-meter,
+.NumberSlider--range .NumberSlider-meter,
+.NumberSlider--stepper .NumberSlider-meter,
+.NumberSlider--bar .NumberSlider-side,
+.NumberSlider--arc .NumberSlider-side,
+.NumberSlider--bar .NumberSlider-arc,
+.NumberSlider--arc .NumberSlider-meter-rail,
+.NumberSlider:not(.NumberSlider--stepper) .NumberSlider-step {
+    display: none;
+}
+
+/* The box hidden by the maker — except on a stepper, where it is the value. */
+.NumberSlider--no-box:not(.NumberSlider--stepper) .NumberSlider-side,
+.NumberSlider--no-box:not(.NumberSlider--stepper) .NumberSlider-field--upper,
+.NumberSlider--no-box .NumberSlider-meter-text {
+    display: none;
+}
+
+.NumberSlider .NumberSlider-input {
+    font-variant-numeric: tabular-nums;
+}
+
+/*
+ * The track. Fluent draws its own rail and thumb over an invisible input; a
+ * range needs two thumbs on one rail, so here the inputs stay visible and only
+ * their tracks go transparent: the browser still places each thumb, takes every
+ * key and reports every value, and the rail and fill underneath are ours.
+ *
+ * The rail is inset by half a thumb at each end, because that is where a native
+ * thumb's centre sits at the minimum and the maximum — so a percentage along
+ * the rail is a percentage along the thumb's travel. `touch-action: none` lets a
+ * drag on a phone move the thumb instead of the form.
+ */
+.NumberSlider .NumberSlider-track {
+    position: relative;
+    flex: 1 1 160px;
+    min-width: 120px;
+    height: 32px;
+    touch-action: none;
+}
+
+.NumberSlider .NumberSlider-rail {
+    position: absolute;
+    top: 50%;
+    inset-inline: calc(var(--NumberSlider-thumb) / 2);
+    height: var(--NumberSlider-rail-size);
+    margin-top: calc(var(--NumberSlider-rail-size) / -2);
+    border-radius: var(--borderRadiusXLarge, 8px);
+    background-color: var(--NumberSlider-rail);
+    forced-color-adjust: none;
+}
+
+.NumberSlider .NumberSlider-fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-radius: inherit;
+    background-color: var(--NumberSlider-band, var(--NumberSlider-accent));
+}
+
+.NumberSlider .NumberSlider-range {
+    position: absolute;
+    top: calc((32px - var(--NumberSlider-thumb)) / 2);
+    left: 0;
+    width: 100%;
+    height: var(--NumberSlider-thumb);
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.NumberSlider .NumberSlider-range[hidden] {
+    display: none;
+}
+
+/* Two inputs over one rail: neither may swallow the other's thumb, so only
+   the thumbs take the pointer. */
+.NumberSlider--range .NumberSlider-range {
+    pointer-events: none;
+}
+
+.NumberSlider--lower-on-top .NumberSlider-range--lower {
+    z-index: 1;
+}
+
+.NumberSlider .NumberSlider-range::-webkit-slider-runnable-track {
+    height: var(--NumberSlider-thumb);
+    border: none;
+    background: transparent;
+}
+
+.NumberSlider .NumberSlider-range::-moz-range-track {
+    height: var(--NumberSlider-thumb);
+    border: none;
+    background: transparent;
+}
+
+/* Fluent's thumb: the accent, a ring of the page's background inside it, and
+   a hairline outside. */
+.NumberSlider .NumberSlider-range::-webkit-slider-thumb {
+    width: var(--NumberSlider-thumb);
+    height: var(--NumberSlider-thumb);
+    border: none;
+    border-radius: var(--borderRadiusCircular, 10000px);
+    background-color: var(--NumberSlider-band, var(--NumberSlider-accent));
+    box-shadow:
+        inset 0 0 0 calc(var(--NumberSlider-thumb) * 0.2) var(--NumberSlider-thumb-ring),
+        0 0 0 1px var(--NumberSlider-thumb-border);
+    pointer-events: auto;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.NumberSlider .NumberSlider-range::-moz-range-thumb {
+    box-sizing: border-box;
+    width: var(--NumberSlider-thumb);
+    height: var(--NumberSlider-thumb);
+    border: none;
+    border-radius: var(--borderRadiusCircular, 10000px);
+    background-color: var(--NumberSlider-band, var(--NumberSlider-accent));
+    box-shadow:
+        inset 0 0 0 calc(var(--NumberSlider-thumb) * 0.2) var(--NumberSlider-thumb-ring),
+        0 0 0 1px var(--NumberSlider-thumb-border);
+    pointer-events: auto;
+}
+
+.NumberSlider .NumberSlider-track:hover {
+    --NumberSlider-accent: var(--NumberSlider-accent-hover);
+}
+
+.NumberSlider .NumberSlider-track:active {
+    --NumberSlider-accent: var(--NumberSlider-accent-pressed);
+}
+
+/* The focus ring goes on the thumb, which is what the arrow keys move. */
+.NumberSlider .NumberSlider-range:focus {
+    outline: none;
+}
+
+.NumberSlider .NumberSlider-range:focus-visible::-webkit-slider-thumb {
+    outline: 2px solid var(--NumberSlider-focus);
+    outline-offset: 2px;
+}
+
+.NumberSlider .NumberSlider-range:focus-visible::-moz-range-thumb {
+    outline: 2px solid var(--NumberSlider-focus);
+    outline-offset: 2px;
+}
+
+/* An empty column: the thumb waits at the start, in the rail's colour. */
+.NumberSlider--empty .NumberSlider-range::-webkit-slider-thumb {
+    background-color: var(--NumberSlider-rail);
+}
+
+.NumberSlider--empty .NumberSlider-range::-moz-range-thumb {
+    background-color: var(--NumberSlider-rail);
+}
+
+.NumberSlider--disabled .NumberSlider-range {
+    cursor: default;
+}
+
+.NumberSlider--disabled .NumberSlider-rail {
+    background-color: var(--NumberSlider-rail-disabled);
+}
+
+.NumberSlider--disabled .NumberSlider-fill {
+    background-color: var(--NumberSlider-foreground-disabled);
+}
+
+.NumberSlider--disabled .NumberSlider-range::-webkit-slider-thumb {
+    background-color: var(--NumberSlider-foreground-disabled);
+    box-shadow:
+        inset 0 0 0 calc(var(--NumberSlider-thumb) * 0.2) var(--NumberSlider-thumb-ring),
+        0 0 0 1px var(--NumberSlider-foreground-disabled);
+}
+
+.NumberSlider--disabled .NumberSlider-range::-moz-range-thumb {
+    background-color: var(--NumberSlider-foreground-disabled);
+    box-shadow:
+        inset 0 0 0 calc(var(--NumberSlider-thumb) * 0.2) var(--NumberSlider-thumb-ring),
+        0 0 0 1px var(--NumberSlider-foreground-disabled);
+}
+
+/* The stepper's buttons: Fluent's secondary Button, square, the field's height. */
+.NumberSlider .NumberSlider-step {
+    flex: none;
+    box-sizing: border-box;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--NumberSlider-button-stroke);
+    border-radius: var(--NumberSlider-radius);
+    background-color: var(--NumberSlider-button);
+    color: var(--NumberSlider-foreground);
+    font-family: inherit;
+    font-size: var(--fontSizeBase400, 16px);
+    line-height: 1;
+    cursor: pointer;
+}
+
+.NumberSlider .NumberSlider-step:hover {
+    background-color: var(--NumberSlider-button-hover);
+}
+
+.NumberSlider .NumberSlider-step:active {
+    background-color: var(--NumberSlider-button-pressed);
+}
+
+.NumberSlider .NumberSlider-step:focus-visible {
+    outline: 2px solid var(--NumberSlider-focus);
+    outline-offset: 1px;
+}
+
+.NumberSlider .NumberSlider-step:disabled {
+    border-color: var(--NumberSlider-stroke-disabled);
+    background-color: var(--NumberSlider-background-disabled);
+    color: var(--NumberSlider-foreground-disabled);
+    cursor: not-allowed;
+}
+
+.NumberSlider--stepper .NumberSlider-input {
+    text-align: center;
+}
+
+/*
+ * The gauges: a value to read, not to move. The bar is a rail with a fill;
+ * the arc a half circle drawn as one dash of a path whose length is 100, so
+ * the value is the dash length and nothing has to be measured.
+ */
+.NumberSlider .NumberSlider-meter {
+    display: flex;
+    flex: 1 1 100%;
+    align-items: center;
+    gap: var(--spacingHorizontalM, 12px);
+    min-width: 0;
+}
+
+.NumberSlider .NumberSlider-meter-rail {
+    flex: 1 1 auto;
+    min-width: 60px;
+    height: 8px;
+    overflow: hidden;
+    border-radius: var(--borderRadiusXLarge, 8px);
+    background-color: var(--NumberSlider-meter-rail);
+    forced-color-adjust: none;
+}
+
+.NumberSlider .NumberSlider-meter-fill {
+    height: 100%;
+    border-radius: inherit;
+    background-color: var(--NumberSlider-band, var(--NumberSlider-accent));
+    transition: width var(--NumberSlider-duration-normal) var(--NumberSlider-curve-ease);
+}
+
+.NumberSlider .NumberSlider-meter-text {
+    flex: none;
+    font-size: var(--NumberSlider-font-size);
+    line-height: var(--NumberSlider-line-height);
+    font-weight: var(--fontWeightSemibold, 600);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.NumberSlider--arc .NumberSlider-meter {
+    flex-direction: column;
+    gap: 0;
+}
+
+.NumberSlider .NumberSlider-arc {
+    display: block;
+    width: 100%;
+    max-width: 200px;
+    height: auto;
+    forced-color-adjust: none;
+}
+
+.NumberSlider .NumberSlider-arc-rail,
+.NumberSlider .NumberSlider-arc-value {
+    fill: none;
+    stroke-width: 10;
+    stroke-linecap: round;
+}
+
+.NumberSlider .NumberSlider-arc-rail {
+    stroke: var(--NumberSlider-meter-rail);
+}
+
+.NumberSlider .NumberSlider-arc-value {
+    stroke: var(--NumberSlider-band, var(--NumberSlider-accent));
+    transition: stroke-dasharray var(--NumberSlider-duration-normal) var(--NumberSlider-curve-ease);
+}
+
+/* The value sits in the arc's hollow. */
+.NumberSlider--arc .NumberSlider-meter-text {
+    margin-top: -1.9em;
+    font-size: var(--fontSizeBase500, 20px);
+    line-height: var(--lineHeightBase500, 28px);
+}
+
+/* An arc fills from the reading direction's start. */
+.NumberSlider[dir="rtl"] .NumberSlider-arc {
+    transform: scaleX(-1);
+}
+
+.NumberSlider .NumberSlider-note {
+    margin: var(--spacingVerticalXXS, 2px) 0 0;
+    font-size: var(--NumberSlider-font-size-caption);
+    line-height: var(--NumberSlider-line-height-caption);
+    color: var(--NumberSlider-foreground-note);
+}
+
+.NumberSlider .NumberSlider-note[hidden] {
+    display: none;
+}
+
+/*
  * Forced colours collapse every tint to one of a handful of system keywords, so
  * anything carrying meaning by colour has to carry it by shape too. The
  * transparent borders become visible ones and the underline picks up the system
@@ -293,6 +697,50 @@
     .NumberSlider--disabled .NumberSlider-input {
         color: GrayText;
     }
+
+    .NumberSlider .NumberSlider-rail {
+        background-color: CanvasText;
+    }
+
+    .NumberSlider .NumberSlider-meter-rail {
+        border: 1px solid CanvasText;
+        background-color: Canvas;
+    }
+
+    .NumberSlider .NumberSlider-fill,
+    .NumberSlider .NumberSlider-meter-fill {
+        background-color: Highlight;
+    }
+
+    .NumberSlider .NumberSlider-range::-webkit-slider-thumb {
+        background-color: Highlight;
+        forced-color-adjust: none;
+    }
+
+    .NumberSlider .NumberSlider-range::-moz-range-thumb {
+        background-color: Highlight;
+    }
+
+    .NumberSlider .NumberSlider-arc-rail {
+        stroke: CanvasText;
+    }
+
+    .NumberSlider .NumberSlider-arc-value {
+        stroke: Highlight;
+    }
+
+    .NumberSlider--disabled .NumberSlider-rail,
+    .NumberSlider--disabled .NumberSlider-fill {
+        background-color: GrayText;
+    }
+
+    .NumberSlider--disabled .NumberSlider-range::-webkit-slider-thumb {
+        background-color: GrayText;
+    }
+
+    .NumberSlider--disabled .NumberSlider-range::-moz-range-thumb {
+        background-color: GrayText;
+    }
 }
 
 /*
@@ -303,7 +751,9 @@
 @media screen and (prefers-reduced-motion: reduce) {
     .NumberSlider .NumberSlider-field,
     .NumberSlider .NumberSlider-field::after,
-    .NumberSlider .NumberSlider-field:focus-within::after {
+    .NumberSlider .NumberSlider-field:focus-within::after,
+    .NumberSlider .NumberSlider-meter-fill,
+    .NumberSlider .NumberSlider-arc-value {
         transition-duration: 0.01ms;
         transition-delay: 0.01ms;
     }

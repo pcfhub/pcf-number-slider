@@ -95,6 +95,30 @@
   <data name="NumberSlider_OutOfRange" xml:space="preserve">
     <value>Entrez un nombre compris entre {0} et {1}.</value>
   </data>
+  <data name="NumberSlider_From" xml:space="preserve">
+    <value>De</value>
+  </data>
+  <data name="NumberSlider_To" xml:space="preserve">
+    <value>À</value>
+  </data>
+  <data name="NumberSlider_Decrease" xml:space="preserve">
+    <value>Diminuer {0}</value>
+  </data>
+  <data name="NumberSlider_Increase" xml:space="preserve">
+    <value>Augmenter {0}</value>
+  </data>
+  <data name="NumberSlider_Empty" xml:space="preserve">
+    <value>Aucune valeur</value>
+  </data>
+  <data name="NumberSlider_Unmapped" xml:space="preserve">
+    <value>Choisissez une colonne pour « Valeur supérieure » afin d'utiliser le style Plage.</value>
+  </data>
+  <data name="NumberSlider_Outside" xml:space="preserve">
+    <value>La valeur enregistrée est en dehors de la plage de ce contrôle, de {0} à {1}.</value>
+  </data>
+  <data name="NumberSlider_Order" xml:space="preserve">
+    <value>La première valeur ne peut pas être supérieure à la seconde.</value>
+  </data>
   <data name="upperValue_Name" xml:space="preserve">
     <value>Valeur supérieure</value>
   </data>
