@@ -82,34 +82,66 @@ const u = performance.getEntriesByType('resource').map((e) => e.name).find((n) =
 (await (await fetch(u)).text()).includes('__pcfNumberSliderProbe')
 ```
 
-**Set-up, once, on the Accounts test form (cll365):**
+**Set-up on cll365 — done 2 Oct 2026**, with `pac solution import`, the
+pp-prodev skill's `ppdev form control bind`, and the Web API for what ppdev
+has no command for (columns, the tab, the records):
 
-1. On **Account**, add — unless a probe of another control left one —
-   *Score*, `cll_score`, **Decimal**, minimum **0**, maximum **10**,
-   precision **1**; and *Min seats* `cll_minseats` and *Max seats*
-   `cll_maxseats`, **Whole number**, minimum **0**, maximum **500**. Publish.
-2. Import `NumberSlider_0.0.1_probe_unmanaged.zip`, publish.
-3. A new tab *Number Slider probe*, with Number Slider on five columns:
+1. `NumberSliderSolution` 0.0.1 imported and published.
+2. On **Account**, in solution `cll365dev` (prefix `cll`): *Min seats*
+   `cll_minseats` and *Max seats* `cll_maxseats`, **Whole number**, 0..500.
+   `cll_score` was already there — **Decimal, 0..100, precision 2**, not the
+   0..10 / 1 first planned — and is used as it is.
+3. The test form is account's **Information** main form
+   (`b053a39a-041a-4356-acef-ddf00182762b`). A new tab *Number Slider
+   probe*, after *File Preview probe*, with Number Slider on five columns:
 
    | Column | Kind | Style | Settings | Asks |
    | --- | --- | --- | --- | --- |
    | `numberofemployees` | Whole number, platform range | Slider | all blank | P1, P8 |
    | `revenue` (Annual revenue) | Currency | Slider | min 0, max 1000000, step 1000 | P1, P2 |
    | `address1_latitude` | FP, declared −90..90, precision 5 | Slider | all blank | P1 |
-   | `cll_score` | Decimal, declared 0..10, precision 1 | Slider | step 0.5 | P1, P3, P6 |
+   | `cll_score` | Decimal, declared 0..100, precision 2 | Slider | step 0.5 | P1, P3, P6 |
    | `cll_minseats` | Whole number, declared 0..500 | **Range** | *Upper value* `cll_maxseats` | P5 |
 
-   And put `cll_score` and `cll_minseats` on the tab a second time as plain
-   fields, so the platform's own control shows what the column holds.
-4. Two accounts: *Probe numbers*, every column above filled; *Probe empty*,
-   none filled. If the organisation has a second currency, set *Probe
-   numbers* to it (P2); say if it has none.
+   And a section *Plain fields* on the same tab with `cll_minseats` and
+   `cll_maxseats` on the platform's own controls. The copies of
+   `numberofemployees` and `revenue` on *Details* and of `address1_latitude`
+   and `cll_score` on *General* are the platform's own controls too — only
+   the probe tab is bound, so each column's probe registers once.
+4. Accounts: *Probe numbers* (`c6361bf1-d0be-f111-aaaf-6045bd06056e`):
+   250 employees, revenue 1,500,000, latitude 47.60621, score 72.5, seats
+   10..400. *Probe empty* (`2676f16d-8dbe-f111-aaaf-6045bd06056e`, left from
+   the File Preview probe), none filled. **The organisation has one currency,
+   USD**, so P2's other-currency half cannot be asked here.
+
+   ```
+   https://cll365.crm.dynamics.com/main.aspx?pagetype=entityrecord&etn=account&id=c6361bf1-d0be-f111-aaaf-6045bd06056e&formid=b053a39a-041a-4356-acef-ddf00182762b
+   ```
+
+**What the set-up taught, for the bind tooling:**
+
+- `ppdev form control bind` binds **every** copy of a column in the form's
+  tabs. Two of this form's probe columns were already on *Details* and two on
+  *General*, and it bound those as well — and **replaced** a binding the
+  *General* copy of `cll_score` already had (most likely Star Rating: of the
+  installed controls that bind a number, it alone is now on no form). Its
+  settings were not recoverable; that copy is a plain Decimal field now.
+- `--param upperValue=@cll_maxseats` wrote the second bound column with **no
+  `type`**; the form designer writes one (`<endDate
+  type="DateAndTime.DateOnly">`). Typed by hand, `type="Whole.None"`.
+- A copy restored to the platform control has to lose its `uniqueid` with
+  its description — and a Decimal copy carrying the **text box's** classid
+  (`{F9A8A302-…}`, as the designer had left `cll_score`) is refused on save
+  as "a custom control with no ControlDescription" (`0x80160019`) until it
+  has the Decimal control's, `{C3EFE0C3-0EC6-42BE-8349-CBD9079DFD8E}`.
+- `GET systemforms` answers with the **published** form: two saves without a
+  publish between them overwrite each other.
 
 | | Question | What to do | What it decides |
 | --- | --- | --- | --- |
 | P1 | What each kind hands over: `type` (the member, the whole group, or another member — all three have been seen on type groups), `raw`, `formatted`, and **every key of `attributes`**: is a declared range there, and is it `Precision` (Decimal, FP, Currency) or `Format` (whole) that tells the kinds apart? | Open *Probe numbers*; `dump()` each of the five; also `copy(JSON.stringify(await __pcfNumberSliderProbe['cll_score'].metadata(), null, 1))` for what the server says the column is | The whole-versus-fractional evidence; whether `Precision` can be read at all; whether the hub harness needs a `precision` (plan item F) |
 | P2 | A currency: `formatted` on a record in another currency, against `formatCurrency(v)`, `formatCurrency(v, 2, '€')` and `numberFormattingInfo.currencySymbol` (the dump samples all of them) | `dump()` the `revenue` instance on *Probe numbers*; then `copy(JSON.stringify(await __pcfNumberSliderProbe['revenue'].readBack(), null, 1))` | Where the symbol comes from while dragging — the record's `formatted` at rest is the fallback |
-| P3 | Writes the column cannot hold: above `MaxValue`; more places than `Precision`; a fraction into a whole number; `null` into a required column. Are `error` and `errorMessage` set? Does Save refuse? What is stored? | On `cll_score`: `.write(15)`, Save; `.write(1.23456)`, Save, `readBack()`; on `numberofemployees`: `.write(3.5)`, Save, `readBack()`. Make `cll_score` Business required, `.write(null)`, Save. `dump()` after each | Clamp at the control, or leave it to the form; round before writing, or let the form |
+| P3 | Writes the column cannot hold: above `MaxValue`; more places than `Precision`; a fraction into a whole number; `null` into a required column. Are `error` and `errorMessage` set? Does Save refuse? What is stored? | On `cll_score` (0..100, precision 2): `.write(150)`, Save; `.write(1.23456)`, Save, `readBack()`; on `numberofemployees`: `.write(3.5)`, Save, `readBack()`. Make `cll_score` Business required, `.write(null)`, Save. `dump()` after each | Clamp at the control, or leave it to the form; round before writing, or let the form |
 | P4 | Echoes at key-repeat speed: 30 writes, 33 ms apart. Reordered? Dropped? How many form OnChange calls, and is the form dirty? | On `cll_score`: `.watchOnChange()`, then `copy(JSON.stringify(await __pcfNumberSliderProbe['cll_score'].burst(30, 33, 0), null, 1))` | Whether a held arrow key needs a throttle |
 | P5 | The second column: the unmapped shape for a number (`type: null`?), and one notify writing both | On `cll_minseats`: `dump()` (the `upperValue` shape); `.writeBoth(15, 450)`, Save, `readBack()`. Then remove *Upper value* in the designer and `dump()` again | Range's configuration message, and that it never writes an unmapped column |
 | P6 | Can the modern designer bind *Maximum* to a column? If so, which columns does it offer, and does a change on the form reach `updateView`? | Open `cll_score`'s Number Slider in the designer and look at *Maximum* — say what it offers. If it binds, bind it, change that column on the form, `dump()` | Whether the docs promise min and max from another column |
