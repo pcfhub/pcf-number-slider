@@ -167,7 +167,11 @@ export class NumberSlider implements ComponentFramework.StandardControl<IInputs,
         // generated type is narrower than the contract.
         const outputs: IOutputs = { value: this.value === null ? (null as unknown as undefined) : this.value };
 
-        if (this.upperWritten && this.upperMapped()) {
+        // Only while the style is Range. PCFHub's demo switches presets on a
+        // mounted control, and a range written once kept handing its upper
+        // column back under every other style (measured on the live demo,
+        // 3 Oct 2026); a form never changes the style at runtime.
+        if (this.style === 'range' && this.upperWritten && this.upperMapped()) {
             outputs.upperValue = this.upper === null ? (null as unknown as undefined) : this.upper;
         }
 

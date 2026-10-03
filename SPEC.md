@@ -353,6 +353,25 @@ gauges and the out-of-range value wrote nothing. An input changed after mount
 (`harness:updateProps`: step, bands, then style) kept the value already
 chosen. At 373 px and in the dark theme nothing overflowed.
 
+**The live demo, 3 Oct 2026, after publishing** (pcfhub.dev, headless CDP into
+the sandboxed frame — the in-app browser's clicks do not reach it): all nine
+presets did what their descriptions say, and the toolbar's Dark, Read-only,
+Right-to-left, Phone, Canvas app and German each reached the control. Two
+things the stand-in run had not shown, both fixed in 0.1.1:
+
+- **Score arc scrolled.** The arc's text was pulled into the hollow with a
+  negative margin, which made the meter's box 100 px for a 110 px SVG; the
+  harness sizes the frame to the control's box, so the document was 2 px too
+  tall. The stand-in's frame is a fixed 360 px, which is why it never showed.
+  The text is positioned over the arc now, and the box is the arc's.
+- **A range kept writing its upper column after the style changed.** The demo
+  switches presets on a mounted control: Seats range wrote `upperValue`, and
+  Quantity stepper's next press handed back `{ value: 2, upperValue: 450 }`.
+  `getOutputs` returns `upperValue` only while the style is Range.
+
+Hub-side, admin only: the category came out *Pickers* (pcfhub.json says
+input), and the tags `slider`, `gauge` and `number` are not in the taxonomy.
+
 ## Walkthrough W1–W8 — 0.1.0 on the form
 
 Import `NumberSlider_0.1.0` (unmanaged) over the probe on cll365; the

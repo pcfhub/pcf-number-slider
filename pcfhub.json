@@ -40,7 +40,7 @@
     "limitations": [
       "The demo's two columns are Decimal columns from 0 to 1,000,000, and every preset sets its own Minimum and Maximum inside that. On a form a Whole number column takes whole steps only and refuses a typed fraction, and a Currency column shows its currency symbol; neither shows here.",
       "At rest the value box shows the number as the demo hands it over, without grouping; on a form it is the platform's own formatted value, such as $250,000.00. While dragging, both format through the user's number settings.",
-      "A read-only form, a column the user cannot edit and a range with no second column cannot be set from a preset; the screenshots show them."
+      "A column the user cannot edit and a range with no second column cannot be set from a preset; the screenshots show them. The toolbar's Read-only switch shows a read-only form."
     ],
     "presets": [
       {

@@ -635,6 +635,7 @@
 }
 
 .NumberSlider--arc .NumberSlider-meter {
+    position: relative;
     flex-direction: column;
     gap: 0;
 }
@@ -663,9 +664,19 @@
     transition: stroke-dasharray var(--NumberSlider-duration-normal) var(--NumberSlider-curve-ease);
 }
 
-/* The value sits in the arc's hollow. */
+/*
+ * The value sits in the arc's hollow, laid over the arc rather than pulled up
+ * into it. A negative margin did the pulling in 0.1.0, and it made the meter's
+ * box shorter than the arc inside it: the SVG hung 10px below the control,
+ * over whatever sat under it on a form, and in PCFHub's demo frame — sized to
+ * the control's box — it was a scrollbar (measured on the live demo,
+ * 3 Oct 2026). Positioned, the text takes no height and the box is the arc's.
+ */
 .NumberSlider--arc .NumberSlider-meter-text {
-    margin-top: -1.9em;
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
     font-size: var(--fontSizeBase500, 20px);
     line-height: var(--lineHeightBase500, 28px);
 }

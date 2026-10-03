@@ -735,6 +735,17 @@ const SEATS = {
     const lockedUpper = mount({ ...SEATS, bound: { upperValue: { ...SEATS.bound.upperValue, security: 'read-only' } } });
     check('range: one column the user cannot edit locks both thumbs', rangeOf(lockedUpper).disabled && rangeOf(lockedUpper, 'upper').disabled);
 
+    // PCFHub's demo switches presets on a mounted control (live demo, 3 Oct 2026).
+    const switched = mount(SEATS);
+    drag(switched, 450, 'upper');
+    switched.update({ inputs: { style: 'stepper' } });
+    fire(q(switched, '.NumberSlider-step--up'), 'click');
+    check(
+        'a style changed away from Range no longer hands the upper column back',
+        switched.outputs().value === 11 && !('upperValue' in switched.outputs()),
+        JSON.stringify(switched.outputs()),
+    );
+
     const single = mount(SCORE);
     check('every other style: one thumb, one box', rangeOf(single, 'upper').hidden && q(single, '.NumberSlider-field--upper').hidden);
 }

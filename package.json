@@ -1,6 +1,6 @@
 {
   "name": "pcf-number-slider",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A slider, range, stepper or gauge for any number column.",
   "license": "MIT",
   "private": true,
