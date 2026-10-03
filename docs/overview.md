@@ -1,40 +1,58 @@
 ---
 title: Overview
-description: What Number Slider does, and when to reach for it.
+description: A number column as a slider, a two-column range, a stepper, or a read-only bar or arc gauge — each with a box to type the exact value.
 order: 1
 ---
 
 # Number Slider
 
-<!--
-  The landing page for the component on PCFHub. Answer, in this order: what it
-  does, who it is for, and what makes it different from doing it another way.
+Drag, step or type a number into any number column, or show one as a gauge.
 
-  `summary` in pcfhub.json is the short version of this page — the paragraph or
-  two the component page shows under "Overview", above the screenshots. Write it
-  once this page is written.
+::image{src=media/states-light.png alt="Twelve Number Slider fields: a slider at 72.50 with its value box; a currency slider at $250,000.00; a green-banded slider at 85.00%; a two-thumb range from 10 to 400; a stepper at 3 with minus and plus buttons; an orange bar gauge at 42.00%; a blue arc gauge reading 72.50; a greyed read-only slider; an empty slider with its thumb at the start; a slider at 150.00 with a note that the saved value is outside the range of 0.00 to 100.00; a slider with no value box; and a range with no second column, saying to choose one."}
 
-  Frontmatter above is read by the hub:
-    title        the page heading and the nav label
-    description  the meta description and the search snippet
-    order        position in the sidebar
-    appliesTo    a semver range — see migration.md
-    draft        `true` keeps the page out of the hub entirely
--->
+The platform's own number controls — Linear Slider, Linear Gauge, the Arc and
+Radial Knobs, Number Input — were deprecated and never replaced, and the
+controls a form offers today have nothing for numbers. This is one you can
+install, for model-driven forms and canvas apps.
 
-A slider, range, stepper or gauge for any number column.
+## Five styles
 
-::image{src=media/screenshot.png alt="Number Slider on a form" zoom}
+| Style | What it is | Writes |
+| --- | --- | --- |
+| **Slider** (the default) | A track and a thumb, with a box for the exact value | yes |
+| **Range** | Two thumbs on one track, each on its own column — a minimum and a maximum, a from and a to | yes, both columns |
+| **Stepper** | − and + buttons around the value | yes |
+| **Bar** | A filled bar and the value | no — a gauge |
+| **Arc** | A half-circle gauge with the value in its hollow | no — a gauge |
 
-## Why this one
+## What it does
 
-- What it does that the built-in control does not.
-- The constraint it was built around.
+- **Takes its range from the column.** A column with a declared minimum and
+  maximum is the slider's range, unless the maker narrows it. The platform's
+  own default for a type — two billion either way for a whole number — is not
+  treated as a range, or every pixel would move millions.
+- **Writes once per change, not once per pixel.** A drag writes when it is let
+  go; each arrow-key press, each stepper press writes once; the box writes on
+  Enter or when it loses focus. A form's OnChange runs once per change.
+- **Writes what the column will keep.** A value is snapped to the step and
+  rounded to the column's decimal places before it is written, so what you
+  see is what is saved. A whole-number column only ever gets whole steps.
+- **Reads and types the user's number format.** `1.234,5` is twelve hundred
+  and thirty-four and a half to a German user; `1.5` is refused rather than
+  read as fifteen. A currency column shows its symbol.
+- **Refuses at the box, not at Save.** A typed value outside the range, a
+  fraction in a whole-number column, or text that is not a number is refused
+  with the reason, and what was typed stays there to be corrected.
+- **Colours by threshold.** `50 danger; 80 warning; 100 success` colours the
+  slider and the gauges red up to 50, amber to 80, green above — in Fluent's
+  own status colours, or any CSS colour.
+- **Leaves an out-of-range value alone.** A saved value outside the slider's
+  range is shown as it is, with a note, and never rewritten until someone
+  changes it.
 
-## What it works with
+## Where it runs
 
-:::callout{type=info}
-Say plainly which hosts are supported — model-driven forms, canvas apps, custom
-pages — and which are not. This is the paragraph that saves a reader twenty
-minutes.
-:::
+Model-driven forms and canvas apps, on a **Whole number**, **Decimal**,
+**Float** or **Currency** column. Styled from the form's own Fluent theme,
+dark mode and brand colour included. It has no dependencies, calls no service
+and asks for no permissions. English, German, French, Spanish and Japanese.

@@ -58,6 +58,8 @@ stepper press, the box on Enter or blur.
 
 ## Probe 0.0.1 — what the form has to answer
 
+*Kept as the record of what was asked; the probe build is gone at 0.1.0 (it is commit d960672).*
+
 `PROBE` is the build itself: `NumberSlider/index.ts` at 0.0.1 is a throwaway
 control — one native range, or two for Range, writing on `change` — and
 `NumberSlider/probe.ts` logs every pass in full the first time and compactly
@@ -307,18 +309,70 @@ Not run: a column under field-level security.
 P9 (phone) and P10 (canvas) are optional and stay in *Not verified*; so does
 P3's `null` into a Business-required column.
 
-## Demo
+## 0.1.0 — what the answers decided
 
-`full` is the candidate: no `<feature-usage>`, no Web API, nothing leaves the
-browser (the probe's console calls are not the control). To be settled with
-0.1.0: the hub's harness gives a bound column `MinValue`/`MaxValue` from the
-fixture (`dataverse.columns`, `boundColumns`) and no `Precision`, and formats
-a number's `formatted` as `String(value)`.
+Each rule below is in the code beside a comment; this is the map from the
+measurement to the rule.
+
+| Answer | Rule in 0.1.0 | Where |
+| --- | --- | --- |
+| P1: every number column carries `Precision`, 0 on a whole number (+ `Format: "0"`) | `Precision === 0` is whole, `> 0` fractional; presence alone proves nothing. Without `attributes`, an exact `Whole.None` is whole | `number.ts` `readColumn` |
+| P1: an unset input arrives `raw: null`, never its manifest default | blank Minimum/Maximum/Step/Style/Value box are decided in code | `index.ts` `render`, `number.ts` `resolveScale` |
+| P1: system columns declare their own big ranges (employees 0..1e9) | used as declared — only the *platform's* per-type defaults are "no range"; the docs tell the maker to set Maximum | `PLATFORM_DEFAULTS` |
+| P2/P11: `formatted` carries the currency symbol; `currencySymbol` is the org's, not the user format's | `formatted` at rest, `formatCurrency` only for a value written and not yet echoed | `index.ts` `atRest` |
+| P3: out of range is refused at Save; 1.23456 comes back 1.23; 3.5 into a whole column comes back 4 | refuse out-of-range and whole-column fractions at the box; round to `Precision` before writing so the echo matches | `commit`, `storable`, `snap` |
+| P3: every write re-renders every control with `["value","parameters"]` | compare values, never `updatedProperties`; `EchoGuard` per bound column | `echo.ts` |
+| P4: 30 writes at ~47 ms → one pass, one OnChange, no reorder | no throttle on keys | — |
+| P5: one `getOutputs` writes both columns | Range returns both; never an unmapped one | `getOutputs` |
+| P6: *Bind to table column* offers only columns of the property's type | min/max/step stay Decimal (user's decision, 3 Oct); documented | `docs/limitations.md` |
+| P7: deactivation sets `isControlDisabled`, not `security.editable` | disabled on either; a range on either column | `render` |
+| P8: every key reaches the native range; each press is `input` + `change` | the slider handles no keys itself; `change` writes | `range()` |
+| P11: separators swap, currency symbol does not | the box parses with `numberFormattingInfo` | `parseNumber` |
+
+## What the hub's demo does to a type group
+
+**The hub demos a property declared with `of-type-group` as the group's
+first member** (`DemoPropertyData::fromModel`, pcfhub main 57959f4): the
+group's members become `allowed_values` and the first is the `ofType` the
+harness builds the property from, `type` included. With `Whole.None` listed
+first, every demo preset was a whole number — a 0.5 step became 1 and a typed
+fraction was refused — so the manifest lists **Decimal first**. A form ignores
+the order. The harness also hands no `Precision` and no `Type` (only
+`MinValue`/`MaxValue` from `demo/fixture.json`, plus `formatted` as
+`String(value)`), so in the demo a column's kind comes from `type` alone: a
+Decimal is "unknown", which takes any step. Hub harness `precision` (plan F) is
+not needed for that; the control is right without it.
+
+## Walkthrough W1–W8 — 0.1.0 on the form
+
+Import `NumberSlider_0.1.0` (unmanaged) over the probe on cll365; the
+*Number Slider probe* tab and its five bindings stay as they are.
+
+| | Do | Expect |
+| --- | --- | --- |
+| W1 | *Probe numbers*: drag `cll_score`'s thumb, let go; then arrow keys ×3 | The box follows while dragging; one save-able change per release and per key; the value has two decimals |
+| W2 | `revenue` (step 1000): drag; then type `2,000,000` in the box, Enter; Escape | `$` in the box at rest; the typed value refused with the range; Escape puts the value back |
+| W3 | `cll_minseats` (Range): drag each thumb into the other; save; reload | The thumbs stop at each other; both columns saved |
+| W4 | Change the Style of `numberofemployees` to Stepper, then `address1_latitude` to Bar, `cll_score` to Arc (designer), publish | Each draws; the gauges cannot be changed |
+| W5 | Deactivate *Probe numbers* | Every slider greyed; nothing can be dragged or typed |
+| W6 | Set `cll_score` to 150 through the Web API (or a plain field), reload | 150 shown in the box, thumb at the end, the note; nothing written |
+| W7 | Dark mode (`?flags=themingEnabled=true` or the app's dark theme) and a narrow window (~280 px for the section) | Fluent's dark colours; the box wraps under the track |
+| W8 | A canvas screen: the control on a number variable, OnChange `Set(n, n + 1)` | One OnChange per release; Minimum/Maximum needed (no column metadata) |
 
 ## Not verified
 
-Everything P1–P11 asks. Until they are answered nothing below the probe is
-built.
+- **All of W1–W8.** 0.1.0 has run in the rig (232 checks, every guard
+  mutation-tested) and in a browser (`dev/preview.html`, `dev/shots.js`), not
+  yet on the form.
+- **P9, a phone.** `touch-action: none` on the track is the intended answer;
+  nobody has dragged it on a phone.
+- **P10, a canvas app** — W8 asks it.
+- **A record in a non-base currency** (P2: the org has only USD).
+- **A column under field-level security** (P7 ran only the read-only form).
+- **A Business-required column cleared** (P3 did not run it).
+- **P6's second half:** whether a change to a column bound to Maximum reaches
+  `updateView`.
+- **The hub demo**, until a real-harness run of every preset.
 
 ## Promoting a finding
 

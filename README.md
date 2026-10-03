@@ -11,80 +11,71 @@ Documentation lives on [PCFHub](https://pcfhub.dev/components/pcf-number-slider)
 from the `docs/` directory in this repository. Edit the Markdown here; the hub
 recompiles it.
 
-<!--
-  This README is for someone standing in the repository — a maintainer, or
-  somebody deciding whether to install the control. The hub publishes `docs/`,
-  not this file, so do not duplicate the documentation here.
-
-  The PCFHub button above promises a live demo. If `demo.fidelity` in
-  `pcfhub.json` is `none`, point it at `badges/view-on-pcfhub.svg` and label it
-  "View on PCFHub" instead.
-
-  The three sections below are the ones worth writing by hand. Everything after
-  them is the same in every repository and needs no edits.
-
-  **Each carries a placeholder, and `npm run check` fails while one remains.**
-  That is deliberate: an unwritten README is the first thing a visitor to the
-  repository sees, and the version of this file that shipped before had worked
-  examples sitting in it that read as real content. One of them — a bound
-  `value` property — was wrong for every control that is not a field control,
-  and reached a published repository.
-
-  Delete these comments once the sections are written. They are instructions to
-  you, and they are noise on a public page.
--->
-
 ## What it does
 
-__WHAT_IT_DOES__
+Drag, step or type a number into a Whole number, Decimal, Float or Currency
+column — or show one as a gauge. Five styles: a **slider** with a box for the
+exact value, a **range** across two columns, a **stepper**, and read-only
+**bar** and **arc** gauges, coloured by threshold if you like
+(`50 danger; 80 warning; 100 success`).
 
-<!--
-  A few paragraphs, not a feature list. Answer what the built-in control does
-  not do, then spend the rest on the one or two decisions a reader would
-  otherwise question — the binding shape, a behaviour that looks like a bug
-  until you know why, a constraint you chose to accept.
+The platform deprecated its own number controls — Linear Slider, Linear
+Gauge, the Arc and Radial Knobs, Number Input — and the controls a form offers
+today have nothing for numbers. This is a replacement for model-driven forms
+and canvas apps, with no dependencies.
 
-  This is the section that saves an issue being opened.
--->
+Three decisions a reader might otherwise question:
+
+- **It writes once per change.** A drag writes when it is let go, each arrow
+  key or stepper press writes once, the box writes on Enter or blur. A form
+  coalesces fast writes on its own, so nothing is throttled.
+- **The column decides the range.** A column's own minimum and maximum are
+  the slider's, unless they are the platform's default for the type — two
+  billion either way for a whole number — which is treated as "no range" and
+  becomes 0–100. A maker's **Minimum** and **Maximum** narrow it; wider is cut
+  to what the column would accept.
+- **What it writes is what the column keeps.** The form rounds a write to the
+  column's decimal places without saying so; the control snaps and rounds
+  first, so the value echoed back is the value written. A typed value the
+  column would refuse — out of range, a fraction in a whole column — is
+  refused at the box with the reason, not at Save.
+
+Every one of these was measured on a model-driven form before it was built;
+[SPEC.md](SPEC.md) has the measurements.
 
 ## Properties
 
-__PROPERTIES__
+| Property | Type | Usage | Default | What it controls |
+| --- | --- | --- | --- | --- |
+| `value` | Decimal, Whole.None, FP, Currency | bound, **required** | — | The column — the bottom of a range |
+| `upperValue` | Decimal, Whole.None, FP, Currency | bound | — | The top of a range; read only by Range |
+| `style` | Enum | input | `slider` | `slider`, `range`, `stepper`, `bar`, `arc` |
+| `min` | Decimal | input | the column's range, else 0 | The start of the scale |
+| `max` | Decimal | input | the column's range, else 100 | The end of the scale |
+| `step` | Decimal | input | 1 | The step a thumb and the stepper move by |
+| `valueBox` | Enum | input | `show` | `show` or `hide` the box (a stepper always shows it) |
+| `unit` | SingleLine.Text | input | — | Shown after the value: `%`, `km` |
+| `bands` | SingleLine.Text | input | — | `threshold colour; …` — `danger`, `warning`, `success`, `brand`, `neutral` or a CSS colour |
 
-<!--
-  The whole configuration surface, including the defaults. `docs/api.md`
-  generates its tables from the manifest; this one is hand-written, so keep it
-  short enough to stay true. Read them out of the manifest rather than from
-  memory, and check them against `generated/ManifestTypes.d.ts`.
-
-  A field control's table looks like this — one row per property, and for a
-  dataset control a second table for the `property-set` roles above it, giving
-  both the display name a maker sees and the manifest name the code looks up by:
-
-      | Property | Type | Usage | Default | What it controls |
-      | --- | --- | --- | --- | --- |
-      | `value` | SingleLine.Text | bound, **required** | — | The column this control reads and writes |
-
-  Follow it with the notes that do not fit a table: which languages the .resx
-  ship, whether the control bundles a framework or uses the platform's, which
-  `uses-feature` permissions a maker is asked for at install, and any property
-  whose accepted values need spelling out.
--->
+Strings ship in English, German, French, Spanish and Japanese. No framework is
+bundled and none is used from the platform: the slider is the browser's own
+range input, styled with the form's Fluent tokens. The control declares no
+`uses-feature`, so the maker installing it is asked for no permissions, and it
+is not premium.
 
 ## On the hub
 
-__ON_THE_HUB__
+The demo is **full** fidelity: the control reaches no Web API, device or
+navigation, so the hub's harness runs it exactly as a form would, and a maker
+can drag, type and step in it with `getOutputs` changing beside it. Nine
+presets cover every style — a banded probability slider, a half-step rating, a
+currency budget, a two-column seats range, a stepper, the bar and arc gauges,
+an empty column and a value saved outside the range.
 
-<!--
-  What `demo.fidelity` is, and *why* it is that and not the next one up. A
-  `limited` demo should say which interactions do not work there; a `full` one
-  is worth explaining, because it follows from the control not reaching Web API,
-  device or navigation — which is also one fewer permission prompt for the maker
-  installing it.
-
-  Mention what the presets cover. Delete this section if fidelity is `none` —
-  and delete the placeholder with it, or the check will go on failing.
--->
+What the demo cannot show is listed with it: its columns are Decimal, so the
+whole-number and currency behaviour is not there, and a read-only form or a
+range with no second column cannot be set from a preset — the screenshots
+show those.
 
 ## Install
 

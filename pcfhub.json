@@ -4,10 +4,10 @@
   "slug": "pcf-number-slider",
   "name": "Number Slider",
   "tagline": "A slider, range, stepper or gauge for any number column.",
-  "summary": "__SUMMARY__",
+  "summary": "Drag, step or type a number into a Whole number, Decimal, Float or Currency column, or show one as a gauge. It covers what the platform's deprecated Linear Slider, Linear Gauge and Arc Knob were used for, and adds a two-column range and a stepper.\n\n- Five styles: a slider with a box for the exact value, a range across two columns, a stepper, and read-only bar and arc gauges\n- Takes its range from the column, and ignores the platform's two-billion-wide default\n- Writes once per change — when a drag is let go, per key or stepper press — snapped to the step and rounded as the column stores it\n- Reads and types the user's number format, and refuses a value the column would refuse before Save does\n- Colours by threshold in Fluent's status colours, and follows the form's theme, dark mode included",
   "category": "input",
-  "hosts": ["model-driven"],
-  "tags": [],
+  "hosts": ["canvas", "model-driven"],
+  "tags": ["accessible", "localised", "dark-mode", "no-dependencies", "slider", "gauge", "number"],
 
   "control": {
     "namespace": "PCFHub",
@@ -29,11 +29,75 @@
 
   "media": {
     "logo": "media/logo.png",
-    "screenshots": []
+    "screenshots": ["media/states-light.png", "media/states-dark.png", "media/screenshot-range.png", "media/screenshot-gauges.png"]
   },
 
   "demo": {
-    "fidelity": "none",
-    "presets": []
+    "fidelity": "full",
+    "bundle": "out/controls/NumberSlider/bundle.js",
+    "styles": ["out/controls/NumberSlider/css/NumberSlider.css"],
+    "datasetFixture": "demo/fixture.json",
+    "limitations": [
+      "The demo's two columns are Decimal columns from 0 to 1,000,000, and every preset sets its own Minimum and Maximum inside that. On a form a Whole number column takes whole steps only and refuses a typed fraction, and a Currency column shows its currency symbol; neither shows here.",
+      "At rest the value box shows the number as the demo hands it over, without grouping; on a form it is the platform's own formatted value, such as $250,000.00. While dragging, both format through the user's number settings.",
+      "A read-only form, a column the user cannot edit and a range with no second column cannot be set from a preset; the screenshots show them."
+    ],
+    "presets": [
+      {
+        "slug": "probability",
+        "name": "Probability with bands",
+        "description": "A slider from 0 to 100 in steps of 5, red to 30, amber to 70, green above. Drag it: the box follows while it moves, and getOutputs changes once, when it is let go.",
+        "props": { "value": 65, "upperValue": null, "style": "slider", "min": 0, "max": 100, "step": 5, "valueBox": "show", "unit": "%", "bands": "30 danger; 70 warning; 100 success" },
+        "isDefault": true
+      },
+      {
+        "slug": "rating",
+        "name": "Rating in halves",
+        "description": "0 to 10 in steps of 0.5. Focus the thumb and use the arrow keys — each press writes once. Type 7.25 in the box: the box takes an exact value the step would not.",
+        "props": { "value": 7.5, "upperValue": null, "style": "slider", "min": 0, "max": 10, "step": 0.5, "valueBox": "show", "unit": "", "bands": "" }
+      },
+      {
+        "slug": "budget",
+        "name": "Budget",
+        "description": "0 to 1,000,000 in steps of 1,000. Type 2,000,000 in the box and press Enter: it is refused with the range, and what you typed stays to be corrected; Escape puts the value back.",
+        "props": { "value": 250000, "upperValue": null, "style": "slider", "min": 0, "max": 1000000, "step": 1000, "valueBox": "show", "unit": "", "bands": "" }
+      },
+      {
+        "slug": "seats",
+        "name": "Seats range",
+        "description": "Two columns on one track, 0 to 500. Drag one thumb into the other: it stops there. Both columns are written in one getOutputs.",
+        "props": { "value": 10, "upperValue": 400, "style": "range", "min": 0, "max": 500, "step": 1, "valueBox": "show", "unit": "", "bands": "" }
+      },
+      {
+        "slug": "quantity",
+        "name": "Quantity stepper",
+        "description": "− and + around the value, 0 to 10. Each press writes once; − switches off at 0 and + at 10. ArrowUp and ArrowDown in the box step too.",
+        "props": { "value": 3, "upperValue": null, "style": "stepper", "min": 0, "max": 10, "step": 1, "valueBox": "show", "unit": "", "bands": "" }
+      },
+      {
+        "slug": "health",
+        "name": "Health bar",
+        "description": "A read-only bar gauge coloured by the same bands as a slider. Change the value in the property panel: the bar and the colour follow; the gauge never writes.",
+        "props": { "value": 42, "upperValue": null, "style": "bar", "min": 0, "max": 100, "step": 1, "valueBox": "show", "unit": "%", "bands": "30 danger; 60 warning; 100 success" }
+      },
+      {
+        "slug": "score",
+        "name": "Score arc",
+        "description": "A read-only half-circle gauge with the value in its hollow.",
+        "props": { "value": 72.5, "upperValue": null, "style": "arc", "min": 0, "max": 100, "step": 1, "valueBox": "show", "unit": "", "bands": "" }
+      },
+      {
+        "slug": "empty",
+        "name": "Empty column",
+        "description": "No value yet: the thumb waits at the start, greyed, and the box is empty. Drag or type to set one; empty the box again to clear it — getOutputs gives null, not 0.",
+        "props": { "value": null, "upperValue": null, "style": "slider", "min": 0, "max": 100, "step": 1, "valueBox": "show", "unit": "", "bands": "" }
+      },
+      {
+        "slug": "outside",
+        "name": "Saved outside the range",
+        "description": "150 saved on a 0–100 slider: shown as saved, the thumb at the end, a note under the field — and nothing written until you change it.",
+        "props": { "value": 150, "upperValue": null, "style": "slider", "min": 0, "max": 100, "step": 1, "valueBox": "show", "unit": "", "bands": "" }
+      }
+    ]
   }
 }

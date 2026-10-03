@@ -6,19 +6,35 @@ order: 8
 
 # FAQ
 
-<!--
-  Grow this page from real questions — issues, comments, the same email twice.
-  Inventing questions nobody asked produces a page nobody reads.
--->
+## Why does my slider run from 0 to 100?
 
-## Why does the control not appear in the component list?
+The column has no range of its own — only the platform's default, which is
+two billion wide — and **Minimum** and **Maximum** are blank. Set them, or
+give the column a minimum and maximum in the table designer. In a canvas app
+there is no column metadata at all, so set them there too.
 
-The usual cause and the fix.
+## Why does the slider not go all the way to the maximum?
 
-## Does it work offline / on mobile / in a phone layout?
+The step does not divide the range. A slider from 0 to 100 in steps of 7
+stops at 98, the last step; type 100 in the box if 100 is what you want.
 
-Answer plainly, and link to [Limitations](limitations.md) rather than repeating
-it.
+## Why was what I typed refused?
+
+The box refuses a value outside the slider's range, a fraction in a
+whole-number column, and anything that is not a number in your number format
+— `1.5` to a German user, whose decimal separator is a comma. What you typed
+stays in the box with the reason under it; Escape puts the saved value back.
+
+## Why is the field showing a value outside the slider?
+
+The value was saved before the control was added, or by something other than
+the control. It is shown exactly as saved, with a note, and left alone until
+someone changes it.
+
+## Does it replace the platform's Linear Slider?
+
+It covers what the deprecated Linear Slider, Linear Gauge and Arc Knob were
+used for, and adds a two-column range and a stepper.
 
 ## How do I report a bug?
 

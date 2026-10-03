@@ -1,0 +1,33 @@
+{
+    "dataverse": {
+        "record": {
+            "entityType": "account",
+            "id": "5c7e2a10-4b3d-4f6e-9a21-7d8c0b1e3f42",
+            "name": "Adventure Works"
+        },
+        "tables": {
+            "account": {
+                "entitySet": "accounts",
+                "primaryId": "accountid",
+                "primaryName": "name",
+                "displayName": "Account",
+                "columns": {
+                    "cr123_amount": {
+                        "type": "Decimal",
+                        "minValue": 0,
+                        "maxValue": 1000000
+                    },
+                    "cr123_upperamount": {
+                        "type": "Decimal",
+                        "minValue": 0,
+                        "maxValue": 1000000
+                    }
+                }
+            }
+        },
+        "boundColumns": {
+            "value": "cr123_amount",
+            "upperValue": "cr123_upperamount"
+        }
+    }
+}

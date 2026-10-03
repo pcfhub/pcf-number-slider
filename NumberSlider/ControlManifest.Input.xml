@@ -7,7 +7,7 @@
   -->
   <control namespace="PCFHub"
            constructor="NumberSlider"
-           version="0.0.1"
+           version="0.1.0"
            display-name-key="NumberSlider_Name"
            description-key="NumberSlider_Desc"
            control-type="standard">
@@ -60,10 +60,15 @@
       whole number) and trusts `type` only to forbid. Narrow the group if
       a kind here is one the control cannot honour: a type offered is a
       type the form designer calls supported.
+
+      Decimal FIRST, on purpose. A form ignores the order; PCFHub's demo
+      does not — it demos a group-typed property as the group's first
+      member. First as Whole.None, every demo preset was a whole number:
+      a 0.5 step became 1 and a typed fraction was refused.
     -->
     <type-group name="number">
-      <type>Whole.None</type>
       <type>Decimal</type>
+      <type>Whole.None</type>
       <type>FP</type>
       <type>Currency</type>
     </type-group>

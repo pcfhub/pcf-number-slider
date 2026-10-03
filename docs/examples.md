@@ -1,30 +1,39 @@
 ---
 title: Examples
-description: Worked configurations of Number Slider.
+description: Settings for common number fields.
 order: 6
 ---
 
 # Examples
 
-<!--
-  Two or three complete, copyable examples beat a dozen fragments. Each one:
-  the goal in a sentence, the configuration, and a picture of the result.
--->
+| Field | Column | Style | Minimum | Maximum | Step | Unit | Colour bands |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Probability | Whole number 0–100 | Slider | — | — | 5 | `%` | `30 danger; 70 warning; 100 success` |
+| Rating | Decimal, 1 place, 0–10 | Slider | — | — | 0.5 | — | — |
+| Budget | Currency | Slider | 0 | 1000000 | 1000 | — | — |
+| Seats | two Whole number columns | Range | 0 | 500 | 1 | — | — |
+| Quantity | Whole number | Stepper | 0 | 99 | 1 | — | — |
+| Account health | Decimal 0–100 | Bar | — | — | — | `%` | `40 danger; 70 warning; 100 success` |
+| Score | Decimal 0–100 | Arc | — | — | — | — | — |
 
-## A basic setup
+A dash means leave it blank: the column's own range is used, and a blank
+step is 1.
 
-```powerfx
-Set(varValue, "Hello");
+::image{src=media/screenshot-range.png alt="A Seats range from 10 to 400 with a box under each end of the track, and a Quantity stepper at 3 with minus and plus buttons."}
+
+## A gauge beside the slider
+
+A gauge never writes, so the same column can carry a slider on one form and a
+bar on a dashboard form — or both on one form, in two sections, the gauge for
+reading at a glance and the slider for changing it.
+
+::image{src=media/screenshot-gauges.png alt="An orange bar gauge for Health at 42.00%, and a blue arc gauge for Score reading 72.50 in its hollow."}
+
+## Thresholds that read the right way round
+
+Bands read from the bottom up. For a value where low is good — days overdue,
+error count — put the good colour first:
+
+```text
+3 success; 10 warning; 999 danger
 ```
-
-::image{src=media/example-basic.png alt="The result of the basic setup"}
-
-## A more involved one
-
-Describe the goal, then show the whole configuration rather than the diff from
-the example above — a reader arriving from search has not read the first one.
-
-:::callout{type=success}
-If an example depends on a version, say which. `appliesTo` in the frontmatter
-pins the entire page; a note is better when only one example is new.
-:::
