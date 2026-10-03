@@ -262,6 +262,51 @@ itself on the slider. Page Up's +10 cannot tell "ten steps" from "a tenth of
 the range" on a 0..100 slider; with a real column range the walkthrough
 looks again.
 
+### P6 — an input bound to a column (2026-10-03, the modern designer)
+
+*Maximum*, *Minimum*, *Step*, *Unit* and *Colour bands* each show **"Bind to
+table column"**; checked, the list is **the table's columns of the
+property's own type** — for *Maximum* (Decimal) on account: *Score* and
+*Exchange Rate*, nothing else. So min, max and step can come from another
+column **only if it is Decimal**; a whole-number or currency column cannot
+be picked. Not verified: whether a change to that column on the form
+reaches `updateView` (nothing was bound).
+
+### P7 — read-only (2026-10-03)
+
+Deactivating *Probe numbers* gave one pass with `updatedProperties:
+["IsControlDisabled", "value", "parameters", "isPageReadOnly"]` and
+`mode.isControlDisabled: true`; **`security.editable` stayed `true`** — the
+column is editable, the page is not. The control disables on either.
+(Deactivating saved the form: P8's unsaved 100 is now the stored value.)
+Not run: a column under field-level security.
+
+### P11 — German formats (2026-10-03, Formats: German (Germany), UI language still 1033)
+
+| | en-US | de-DE |
+| --- | --- | --- |
+| `cll_score` `formatted` | `72.50` | `1,23` |
+| `revenue` `formatted` | `$1,500,000.00` | `1.500.000,00 $` |
+| `formatDecimal(1234.5)` | `1,234.50` | `1.234,50` |
+| `formatCurrency(-1234.5)` | `($1,234.50)` | `-1.234,50 $` |
+| separators (decimal / group) | `.` / `,` | `,` / `.` |
+| currency patterns (positive / negative) | 0 / 0 | 3 / 8 |
+| **`currencySymbol`** | `$` | **`$`** |
+
+- The separators and the currency patterns follow the user's format; **the
+  currency symbol does not** — it is the organisation's currency (USD), in a
+  German layout. `languageId` stays 1033: formats are independent of the UI
+  language.
+- `formatCurrency(v, 2, 'EUR')` → `1.234,50 EUR`: a code follows the number
+  in this pattern too.
+- The box's parser reads `numberDecimalSeparator` / `numberGroupSeparator`
+  from here, as the `--bind number` scaffold does; P11 confirms they swap.
+
+### Not asked on the form
+
+P9 (phone) and P10 (canvas) are optional and stay in *Not verified*; so does
+P3's `null` into a Business-required column.
+
 ## Demo
 
 `full` is the candidate: no `<feature-usage>`, no Web API, nothing leaves the
