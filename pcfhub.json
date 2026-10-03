@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+
+  "slug": "pcf-number-slider",
+  "name": "Number Slider",
+  "tagline": "A slider, range, stepper or gauge for any number column.",
+  "summary": "__SUMMARY__",
+  "category": "input",
+  "hosts": ["model-driven"],
+  "tags": [],
+
+  "control": {
+    "namespace": "PCFHub",
+    "constructor": "NumberSlider",
+    "type": "field",
+    "framework": "standard",
+    "manifestPath": "NumberSlider/ControlManifest.Input.xml"
+  },
+
+  "links": {
+    "homepage": "https://github.com/pcfhub/pcf-number-slider",
+    "support": "https://github.com/pcfhub/pcf-number-slider/issues",
+    "license": "MIT"
+  },
+
+  "docs": {
+    "path": "docs"
+  },
+
+  "media": {
+    "logo": "media/logo.png",
+    "screenshots": []
+  },
+
+  "demo": {
+    "fidelity": "none",
+    "presets": []
+  }
+}
