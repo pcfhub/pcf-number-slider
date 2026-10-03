@@ -242,6 +242,14 @@ coalesces a burst of `notifyOutputChanged` into a single `updateView` and a
 single OnChange, so **arrow keys write on every press, with no throttle**,
 and the echo guard sees one echo, of the last value.
 
+### P5 — the second column (2026-10-03)
+
+One `getOutputs` carrying `value` 15 and `upperValue` 450, then Save: the
+server holds `cll_minseats` 15 and `cll_maxseats` 450. A second bound column
+saves exactly as the first. The unmapped shape was already measured in P1 on
+the four instances with no upper column (`type: null`, `attributes: {}`,
+`security: {}`), so the designer half of P5 was not needed.
+
 ## Demo
 
 `full` is the candidate: no `<feature-usage>`, no Web API, nothing leaves the
