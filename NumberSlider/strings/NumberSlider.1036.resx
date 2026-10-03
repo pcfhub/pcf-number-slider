@@ -81,13 +81,7 @@
     <value>Valeur</value>
   </data>
   <data name="value_Desc" xml:space="preserve">
-    <value>La colonne que ce contrôle lit et écrit.</value>
-  </data>
-  <data name="placeholder_Name" xml:space="preserve">
-    <value>Espace réservé</value>
-  </data>
-  <data name="placeholder_Desc" xml:space="preserve">
-    <value>Texte indicatif affiché lorsque le champ est vide.</value>
+    <value>La colonne numérique que le contrôle lit et écrit ; le bas de la plage lorsque le style est Plage.</value>
   </data>
   <data name="NumberSlider_NoAccess" xml:space="preserve">
     <value>Vous n'avez pas accès à cette valeur.</value>
@@ -100,5 +94,74 @@
   </data>
   <data name="NumberSlider_OutOfRange" xml:space="preserve">
     <value>Entrez un nombre compris entre {0} et {1}.</value>
+  </data>
+  <data name="upperValue_Name" xml:space="preserve">
+    <value>Valeur supérieure</value>
+  </data>
+  <data name="upperValue_Desc" xml:space="preserve">
+    <value>Plage uniquement : la colonne numérique qui contient le haut de la plage.</value>
+  </data>
+  <data name="style_Name" xml:space="preserve">
+    <value>Style</value>
+  </data>
+  <data name="style_Desc" xml:space="preserve">
+    <value>Comment le nombre est affiché : un curseur, une plage sur deux colonnes, un pas à pas, ou une barre ou un arc en lecture seule.</value>
+  </data>
+  <data name="style_Slider" xml:space="preserve">
+    <value>Curseur</value>
+  </data>
+  <data name="style_Range" xml:space="preserve">
+    <value>Plage (deux colonnes)</value>
+  </data>
+  <data name="style_Stepper" xml:space="preserve">
+    <value>Pas à pas</value>
+  </data>
+  <data name="style_Bar" xml:space="preserve">
+    <value>Jauge : barre</value>
+  </data>
+  <data name="style_Arc" xml:space="preserve">
+    <value>Jauge : arc</value>
+  </data>
+  <data name="min_Name" xml:space="preserve">
+    <value>Minimum</value>
+  </data>
+  <data name="min_Desc" xml:space="preserve">
+    <value>La valeur la plus basse. Vide : le minimum de la colonne, ou 0.</value>
+  </data>
+  <data name="max_Name" xml:space="preserve">
+    <value>Maximum</value>
+  </data>
+  <data name="max_Desc" xml:space="preserve">
+    <value>La valeur la plus haute. Vide : le maximum de la colonne, ou 100.</value>
+  </data>
+  <data name="step_Name" xml:space="preserve">
+    <value>Pas</value>
+  </data>
+  <data name="step_Desc" xml:space="preserve">
+    <value>De combien un pas change la valeur. Vide : 1.</value>
+  </data>
+  <data name="valueBox_Name" xml:space="preserve">
+    <value>Zone de valeur</value>
+  </data>
+  <data name="valueBox_Desc" xml:space="preserve">
+    <value>Affiche une zone à côté du curseur pour saisir une valeur exacte.</value>
+  </data>
+  <data name="valueBox_Show" xml:space="preserve">
+    <value>Afficher</value>
+  </data>
+  <data name="valueBox_Hide" xml:space="preserve">
+    <value>Masquer</value>
+  </data>
+  <data name="unit_Name" xml:space="preserve">
+    <value>Unité</value>
+  </data>
+  <data name="unit_Desc" xml:space="preserve">
+    <value>Texte affiché après la valeur, par exemple % ou km.</value>
+  </data>
+  <data name="bands_Name" xml:space="preserve">
+    <value>Bandes de couleur</value>
+  </data>
+  <data name="bands_Desc" xml:space="preserve">
+    <value>Couleurs par seuil, du plus bas au plus haut, par exemple : 50 danger; 80 warning; 100 success.</value>
   </data>
 </root>

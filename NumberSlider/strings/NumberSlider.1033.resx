@@ -79,15 +79,9 @@
     <value>Value</value>
   </data>
   <data name="value_Desc" xml:space="preserve">
-    <value>The column this control reads and writes.</value>
+    <value>The number column the control reads and writes — the bottom of the range when the style is Range.</value>
   </data>
 
-  <data name="placeholder_Name" xml:space="preserve">
-    <value>Placeholder</value>
-  </data>
-  <data name="placeholder_Desc" xml:space="preserve">
-    <value>Hint text shown while the field is empty.</value>
-  </data>
   <!--
     Runtime strings, read with context.resources.getString(). Anything the user
     can read belongs here rather than as a literal in index.ts or as an input
@@ -110,5 +104,74 @@
   </data>
   <data name="NumberSlider_OutOfRange" xml:space="preserve">
     <value>Enter a number from {0} to {1}.</value>
+  </data>
+  <data name="upperValue_Name" xml:space="preserve">
+    <value>Upper value</value>
+  </data>
+  <data name="upperValue_Desc" xml:space="preserve">
+    <value>Range only: the number column that holds the top of the range.</value>
+  </data>
+  <data name="style_Name" xml:space="preserve">
+    <value>Style</value>
+  </data>
+  <data name="style_Desc" xml:space="preserve">
+    <value>How the number is shown: a slider, a range over two columns, a stepper, or a read-only bar or arc.</value>
+  </data>
+  <data name="style_Slider" xml:space="preserve">
+    <value>Slider</value>
+  </data>
+  <data name="style_Range" xml:space="preserve">
+    <value>Range (two columns)</value>
+  </data>
+  <data name="style_Stepper" xml:space="preserve">
+    <value>Stepper</value>
+  </data>
+  <data name="style_Bar" xml:space="preserve">
+    <value>Gauge: bar</value>
+  </data>
+  <data name="style_Arc" xml:space="preserve">
+    <value>Gauge: arc</value>
+  </data>
+  <data name="min_Name" xml:space="preserve">
+    <value>Minimum</value>
+  </data>
+  <data name="min_Desc" xml:space="preserve">
+    <value>The lowest value. Blank: the column's own minimum, or 0.</value>
+  </data>
+  <data name="max_Name" xml:space="preserve">
+    <value>Maximum</value>
+  </data>
+  <data name="max_Desc" xml:space="preserve">
+    <value>The highest value. Blank: the column's own maximum, or 100.</value>
+  </data>
+  <data name="step_Name" xml:space="preserve">
+    <value>Step</value>
+  </data>
+  <data name="step_Desc" xml:space="preserve">
+    <value>How far one step moves the value. Blank: 1.</value>
+  </data>
+  <data name="valueBox_Name" xml:space="preserve">
+    <value>Value box</value>
+  </data>
+  <data name="valueBox_Desc" xml:space="preserve">
+    <value>Show a box beside the slider to type an exact value.</value>
+  </data>
+  <data name="valueBox_Show" xml:space="preserve">
+    <value>Show</value>
+  </data>
+  <data name="valueBox_Hide" xml:space="preserve">
+    <value>Hide</value>
+  </data>
+  <data name="unit_Name" xml:space="preserve">
+    <value>Unit</value>
+  </data>
+  <data name="unit_Desc" xml:space="preserve">
+    <value>Text shown after the value, such as % or km.</value>
+  </data>
+  <data name="bands_Name" xml:space="preserve">
+    <value>Colour bands</value>
+  </data>
+  <data name="bands_Desc" xml:space="preserve">
+    <value>Colours by threshold, lowest first, such as: 50 danger; 80 warning; 100 success.</value>
   </data>
 </root>

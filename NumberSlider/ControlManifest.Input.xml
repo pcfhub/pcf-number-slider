@@ -7,7 +7,7 @@
   -->
   <control namespace="PCFHub"
            constructor="NumberSlider"
-           version="0.1.0"
+           version="0.0.1"
            display-name-key="NumberSlider_Name"
            description-key="NumberSlider_Desc"
            control-type="standard">
@@ -74,9 +74,94 @@
               usage="bound"
               required="true" />
 
-    <property name="placeholder"
-              display-name-key="placeholder_Name"
-              description-key="placeholder_Desc"
+    <!--
+      The top of a range, in a column of its own: a range is two values, and
+      Dataverse has no column that holds two. Optional, so a maker who never
+      chooses Range never sees a second required column; the configuration
+      pane renders it as a column picker of its own. Read only when `style`
+      is Range. Unmapped, it arrives as `type: null` (pcf-address-autocomplete
+      measured the shape) and is never written.
+
+      The style is a property of its own rather than "two columns mapped means
+      a range" because the hub's demo shares one fixture across every preset
+      and cannot present an unmapped column: inferred, every demo preset would
+      be a range.
+    -->
+    <property name="upperValue"
+              display-name-key="upperValue_Name"
+              description-key="upperValue_Desc"
+              of-type-group="number"
+              usage="bound"
+              required="false" />
+
+    <property name="style"
+              display-name-key="style_Name"
+              description-key="style_Desc"
+              of-type="Enum"
+              usage="input"
+              required="false"
+              default-value="slider">
+      <value name="slider" display-name-key="style_Slider">slider</value>
+      <value name="range" display-name-key="style_Range">range</value>
+      <value name="stepper" display-name-key="style_Stepper">stepper</value>
+      <value name="bar" display-name-key="style_Bar">bar</value>
+      <value name="arc" display-name-key="style_Arc">arc</value>
+    </property>
+
+    <!--
+      Blank is a real setting: the column's own declared range, and 0 to 100
+      where the column declares none (a range equal to the platform's default
+      for the type is "none", or a slider over two billion would move a whole
+      number per pixel of nothing). A maker's range narrower than the
+      column's is kept; one wider is cut to the column's, which is what the
+      column will accept.
+    -->
+    <property name="min"
+              display-name-key="min_Name"
+              description-key="min_Desc"
+              of-type="Decimal"
+              usage="input"
+              required="false" />
+
+    <property name="max"
+              display-name-key="max_Name"
+              description-key="max_Desc"
+              of-type="Decimal"
+              usage="input"
+              required="false" />
+
+    <property name="step"
+              display-name-key="step_Name"
+              description-key="step_Desc"
+              of-type="Decimal"
+              usage="input"
+              required="false" />
+
+    <!--
+      An Enum, not a TwoOptions: a TwoOptions input cannot default to on, and
+      the box is on unless the maker says otherwise.
+    -->
+    <property name="valueBox"
+              display-name-key="valueBox_Name"
+              description-key="valueBox_Desc"
+              of-type="Enum"
+              usage="input"
+              required="false"
+              default-value="show">
+      <value name="show" display-name-key="valueBox_Show">show</value>
+      <value name="hide" display-name-key="valueBox_Hide">hide</value>
+    </property>
+
+    <property name="unit"
+              display-name-key="unit_Name"
+              description-key="unit_Desc"
+              of-type="SingleLine.Text"
+              usage="input"
+              required="false" />
+
+    <property name="bands"
+              display-name-key="bands_Name"
+              description-key="bands_Desc"
               of-type="SingleLine.Text"
               usage="input"
               required="false" />

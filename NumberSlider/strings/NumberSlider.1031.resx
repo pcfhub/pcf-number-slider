@@ -81,13 +81,7 @@
     <value>Wert</value>
   </data>
   <data name="value_Desc" xml:space="preserve">
-    <value>Die Spalte, die dieses Steuerelement liest und schreibt.</value>
-  </data>
-  <data name="placeholder_Name" xml:space="preserve">
-    <value>Platzhalter</value>
-  </data>
-  <data name="placeholder_Desc" xml:space="preserve">
-    <value>Hinweistext, der angezeigt wird, solange das Feld leer ist.</value>
+    <value>Die Zahlenspalte, die das Steuerelement liest und schreibt – beim Stil „Bereich“ der Anfang des Bereichs.</value>
   </data>
   <data name="NumberSlider_NoAccess" xml:space="preserve">
     <value>Sie haben keinen Zugriff auf diesen Wert.</value>
@@ -100,5 +94,74 @@
   </data>
   <data name="NumberSlider_OutOfRange" xml:space="preserve">
     <value>Geben Sie eine Zahl zwischen {0} und {1} ein.</value>
+  </data>
+  <data name="upperValue_Name" xml:space="preserve">
+    <value>Oberer Wert</value>
+  </data>
+  <data name="upperValue_Desc" xml:space="preserve">
+    <value>Nur für „Bereich“: die Zahlenspalte, die das Ende des Bereichs enthält.</value>
+  </data>
+  <data name="style_Name" xml:space="preserve">
+    <value>Stil</value>
+  </data>
+  <data name="style_Desc" xml:space="preserve">
+    <value>Wie die Zahl angezeigt wird: als Schieberegler, als Bereich über zwei Spalten, als Zähler oder als schreibgeschützter Balken oder Bogen.</value>
+  </data>
+  <data name="style_Slider" xml:space="preserve">
+    <value>Schieberegler</value>
+  </data>
+  <data name="style_Range" xml:space="preserve">
+    <value>Bereich (zwei Spalten)</value>
+  </data>
+  <data name="style_Stepper" xml:space="preserve">
+    <value>Zähler</value>
+  </data>
+  <data name="style_Bar" xml:space="preserve">
+    <value>Anzeige: Balken</value>
+  </data>
+  <data name="style_Arc" xml:space="preserve">
+    <value>Anzeige: Bogen</value>
+  </data>
+  <data name="min_Name" xml:space="preserve">
+    <value>Minimum</value>
+  </data>
+  <data name="min_Desc" xml:space="preserve">
+    <value>Der kleinste Wert. Leer: das Minimum der Spalte oder 0.</value>
+  </data>
+  <data name="max_Name" xml:space="preserve">
+    <value>Maximum</value>
+  </data>
+  <data name="max_Desc" xml:space="preserve">
+    <value>Der größte Wert. Leer: das Maximum der Spalte oder 100.</value>
+  </data>
+  <data name="step_Name" xml:space="preserve">
+    <value>Schrittweite</value>
+  </data>
+  <data name="step_Desc" xml:space="preserve">
+    <value>Um wie viel ein Schritt den Wert ändert. Leer: 1.</value>
+  </data>
+  <data name="valueBox_Name" xml:space="preserve">
+    <value>Wertfeld</value>
+  </data>
+  <data name="valueBox_Desc" xml:space="preserve">
+    <value>Zeigt neben dem Schieberegler ein Feld zur Eingabe eines genauen Werts.</value>
+  </data>
+  <data name="valueBox_Show" xml:space="preserve">
+    <value>Anzeigen</value>
+  </data>
+  <data name="valueBox_Hide" xml:space="preserve">
+    <value>Ausblenden</value>
+  </data>
+  <data name="unit_Name" xml:space="preserve">
+    <value>Einheit</value>
+  </data>
+  <data name="unit_Desc" xml:space="preserve">
+    <value>Text hinter dem Wert, etwa % oder km.</value>
+  </data>
+  <data name="bands_Name" xml:space="preserve">
+    <value>Farbbereiche</value>
+  </data>
+  <data name="bands_Desc" xml:space="preserve">
+    <value>Farben je Schwellenwert, aufsteigend, etwa: 50 danger; 80 warning; 100 success.</value>
   </data>
 </root>

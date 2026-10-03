@@ -205,8 +205,19 @@ const marked = (key) => `resx:${key}`;
  * default text column. `setup.mjs --bind` rewrites this line, so a number or a
  * yes/no control is mounted on its own kind of column throughout — the
  * teardown checks below included — rather than handed "Contoso Ltd".
+ *
+ * `COLUMN.inputs` are merged under each mount's own, not replaced by them: a
+ * host hands over every input the manifest declares, `raw: null` where the
+ * maker set none, so give the control's defaults here and let a mount name
+ * only the one it is about.
  */
-const COLUMN = { valueType: 'Decimal', value: 1234.5, typeGroup: ['Whole.None', 'Decimal', 'FP', 'Currency'] };
+const COLUMN = {
+    valueType: 'Decimal',
+    value: 1234.5,
+    typeGroup: ['Whole.None', 'Decimal', 'FP', 'Currency'],
+    // Every input the manifest declares, as a form hands over a maker's blank.
+    inputs: { style: 'slider', min: null, max: null, step: null, valueBox: 'show', unit: null, bands: null },
+};
 
 /**
  * Mount a fresh control in a given state and hand back everything worth
@@ -247,7 +258,7 @@ function mount(options) {
     // `getString` first, so a single assertion can override it — the marked key
     // proves a string came from the .resx, but it cannot prove a `{0}` was
     // substituted, because a marked key has no `{0}` in it to substitute.
-    const context = host.createContext({ getString: marked, ...COLUMN, ...options, ...site });
+    const context = host.createContext({ getString: marked, ...COLUMN, ...options, ...site, inputs: { ...COLUMN.inputs, ...options.inputs } });
     const instance = new registration.ctor();
 
     let notifications = 0;
@@ -280,7 +291,9 @@ function mount(options) {
         /** The organisation URL this instance's `page.getClientUrl()` answers. */
         clientUrl: site.clientUrl,
         /** Re-render in a new state, as the platform does on every change. */
-        update: (next) => instance.updateView(host.createContext({ getString: marked, ...COLUMN, ...options, ...site, ...next })),
+        update: (next) => instance.updateView(host.createContext({
+            getString: marked, ...COLUMN, ...options, ...site, ...next, inputs: { ...COLUMN.inputs, ...options.inputs, ...(next && next.inputs) },
+        })),
         /** Unmount, as the platform does when the form closes or navigates. */
         destroy: () => {
             instance.destroy();
@@ -306,290 +319,91 @@ if (typeof registration.ctor !== 'function') {
 }
 
 /* ======================================================================== *
- *  WORKED EXAMPLE — replace everything below with assertions about your own
- *  control. It exercises the scaffolded number control (`setup.mjs --bind
- *  number`): one box, typed in the user's format, committed on Enter or when
- *  it loses focus, refusing what the column cannot hold — and the states a
- *  form puts every field control into.
+ *  THE 0.0.1 PROBE BUILD — replaced, with the probe, at 0.1.0.
  *
- *  Every mount starts from COLUMN above: a Decimal column holding 1234.5,
- *  bound through the four-type group the manifest declares.
+ *  What this build has to get right is small: register the probe under the
+ *  bound column, log every pass, write on `change` and nowhere else, hand a
+ *  clear back as null, and never write an unmapped upper column. The control's
+ *  real suite is written with the control, after the form has answered.
  * ======================================================================== */
 
-/** The control's box. */
-const box = (handle) => handle.find('input');
+const probes = () => global.__pcfNumberSliderProbe || {};
+const ranges = (handle) => handle.container.querySelectorAll('input');
 
-/** What the message line says. */
-const message = (handle) => handle.find('.NumberSlider-message').textContent;
-
-/** Select everything in the box and type over it, as a user does. */
-function retype(handle, text) {
-    const input = box(handle);
-
-    input.focus();
-    input.setSelectionRange(0, input.value.length);
-
-    if (input.value !== '') {
-        dom.user.backspace(input);
-    }
-
-    dom.user.type(input, text);
-
-    return input;
-}
-
-/** A key the box handles itself — Enter commits, Escape takes a refusal back. */
-function press(handle, key) {
-    box(handle).dispatchEvent({ type: 'keydown', key, target: box(handle), preventDefault() {} });
-}
-
-const plain = mount({});
+const plain = mount({ column: 'numberofemployees', valueType: 'Whole.None', value: 250 });
 
 check(
-    "shows the platform's own formatted value at rest",
-    box(plain).value === '1,234.50',
-    box(plain).value,
+    'the probe registers under the bound column, not under one global',
+    typeof probes().numberofemployees === 'object' && typeof probes().numberofemployees.dump === 'function',
+    Object.keys(probes()).join(', '),
+);
+
+plain.update({ value: 260 });
+
+const dumped = JSON.parse(probes().numberofemployees.dump());
+
+check(
+    'dump() is JSON holding the first pass in full and every pass after it',
+    dumped.probe === '0.0.1' && dumped.first.value.attributes.Format === 'None' && dumped.passCount === 2
+        && dumped.passes[1].raw === 260
+        && dumped.first.formatting.present === true && dumped.first.numberFormattingInfo.numberDecimalSeparator === '.',
+    `${dumped.passCount} pass(es) logged`,
 );
 
 check(
-    "the box's accessible name is the form's own label, and the .resx is the fallback",
-    box(plain).getAttribute('aria-label') === 'Account name'
-        && box(mount({ label: '' })).getAttribute('aria-label') === 'resx:NumberSlider_Name',
+    'a second instance on another column registers beside it',
+    (() => {
+        mount({ column: 'revenue', valueType: 'Currency', value: 1500 });
+        return typeof probes().revenue === 'object' && typeof probes().numberofemployees === 'object';
+    })(),
 );
 
-box(plain).focus();
+const slider = ranges(plain)[0];
+
+slider.value = '300';
+slider.dispatchEvent({ type: 'input', target: slider, preventDefault() {} });
+
+check('dragging (input) writes nothing', plain.notifications() === 0);
+
+slider.dispatchEvent({ type: 'change', target: slider, preventDefault() {} });
 
 check(
-    "focusing shows the number to edit — no grouping, the user's decimal separator",
-    box(plain).value === '1234.5',
-    box(plain).value,
+    'releasing (change) writes once',
+    plain.notifications() === 1 && plain.outputs().value === 300,
+    JSON.stringify(plain.outputs()),
 );
 
-box(plain).blur();
+probes().numberofemployees.write(null);
 
-check('leaving the box unchanged writes nothing', plain.notifications() === 0);
+check('a probe write of null is handed back as null, not "no change"', plain.outputs().value === null, JSON.stringify(plain.outputs()));
 
-/* -------------------------------------------------- typed, then committed */
+const unmapped = mount({ column: 'cll_minseats', valueType: 'Whole.None', value: 10, inputs: { style: 'range' }, bound: { upperValue: 'unmapped' } });
 
-const typed = mount({});
-
-retype(typed, '2,500.75');
-
-check('nothing is written while the user is still typing', typed.notifications() === 0);
-
-box(typed).blur();
+probes().cll_minseats.writeUpper(20);
 
 check(
-    "a number typed in the user's format is written when the box loses focus",
-    typed.outputs().value === 2500.75 && typed.notifications() === 1,
-    JSON.stringify(typed.outputs()),
+    'an unmapped upper column is never handed back',
+    !('upperValue' in unmapped.outputs()),
+    JSON.stringify(unmapped.outputs()),
 );
+
+const mapped = mount({
+    column: 'cll_minseats',
+    valueType: 'Whole.None',
+    value: 10,
+    inputs: { style: 'range' },
+    bound: { upperValue: { type: 'Whole.None', raw: 400, column: 'cll_maxseats', minValue: 0, maxValue: 500 } },
+});
+
+probes().cll_minseats.writeBoth(15, 450);
 
 check(
-    '…and the box goes back to the formatted number, through context.formatting',
-    box(typed).value === '2,500.75' && typed.calls().some((call) => call.startsWith('formatting.formatDecimal')),
-    box(typed).value,
+    'a mapped one is, beside the value, in the same notify',
+    mapped.outputs().value === 15 && mapped.outputs().upperValue === 450,
+    JSON.stringify(mapped.outputs()),
 );
 
-const german = mount({ locale: 'de-DE' });
-
-check("a German user sees the German form at rest", box(german).value === '1.234,50', box(german).value);
-
-retype(german, '2.500,75');
-press(german, 'Enter');
-
-check(
-    "a German user's 2.500,75 is 2500.75 — and Enter commits without leaving the box",
-    german.outputs().value === 2500.75 && dom.document.activeElement === box(german),
-    JSON.stringify(german.outputs()),
-);
-
-retype(german, '1.5');
-press(german, 'Enter');
-
-check(
-    '…while 1.5 is not a number to a German user: a group separator is only taken where it groups',
-    german.outputs().value === 2500.75 && message(german) === 'resx:NumberSlider_NotANumber',
-    message(german),
-);
-
-/* ------------------------------------------------------------ refusals */
-
-const wrong = mount({});
-
-retype(wrong, 'abc');
-box(wrong).blur();
-
-check(
-    'text that is not a number is refused — nothing written, the reason shown, the text kept to correct',
-    wrong.notifications() === 0 && box(wrong).value === 'abc'
-        && message(wrong) === 'resx:NumberSlider_NotANumber' && box(wrong).getAttribute('aria-invalid') === 'true',
-    `${box(wrong).value} / ${message(wrong)}`,
-);
-
-wrong.update({});
-
-check('…and a re-render does not throw the typed text away', box(wrong).value === 'abc', box(wrong).value);
-
-box(wrong).focus();
-press(wrong, 'Escape');
-
-check(
-    'Escape takes the refusal back: the column\'s number returns and the message goes',
-    box(wrong).value === '1234.5' && message(wrong) === '' && box(wrong).getAttribute('aria-invalid') === 'false',
-    box(wrong).value,
-);
-
-const ranged = mount({ value: 5, minValue: 0, maxValue: 10 });
-
-retype(ranged, '11');
-box(ranged).blur();
-
-check(
-    "a value outside the column's declared range is refused at the box, not at Save",
-    ranged.notifications() === 0 && message(ranged).startsWith('resx:NumberSlider_OutOfRange'),
-    message(ranged),
-);
-
-const whole = mount({ valueType: 'Whole.None', value: 3 });
-
-retype(whole, '3.5');
-box(whole).blur();
-
-check(
-    'a fraction in a whole-number column is refused, not rounded',
-    whole.notifications() === 0 && message(whole) === 'resx:NumberSlider_WholeOnly',
-    message(whole),
-);
-
-const reportsGroup = mount({ valueType: 'Whole.None', value: 3, typeReport: 'group' });
-
-retype(reportsGroup, '3.5');
-box(reportsGroup).blur();
-
-check(
-    '…on a host that reports the whole type group as `type` too — attributes are the evidence, not the type',
-    reportsGroup.notifications() === 0 && message(reportsGroup) === 'resx:NumberSlider_WholeOnly',
-);
-
-const misreported = mount({ valueType: 'Decimal', value: 3, typeReport: 'wrong-member' });
-
-retype(misreported, '3.5');
-box(misreported).blur();
-
-check(
-    '…and a decimal column a host misreports as Whole.None still takes 3.5, because its Precision says so',
-    misreported.outputs().value === 3.5,
-    JSON.stringify(misreported.outputs()),
-);
-
-const canvas = mount({ valueType: 'Whole.None', value: 3, host: 'canvas', typeReport: 'group' });
-
-retype(canvas, '3.5');
-box(canvas).blur();
-
-check(
-    'in a canvas app — no metadata, a group string for `type` — nothing forbids a fraction, and the box takes it',
-    canvas.outputs().value === 3.5,
-    JSON.stringify(canvas.outputs()),
-);
-
-const precise = mount({ value: 1, precision: 1 });
-
-retype(precise, '1.26');
-box(precise).blur();
-
-check("a number is rounded to the column's precision before it is written", precise.outputs().value === 1.3, JSON.stringify(precise.outputs()));
-
-/* ------------------------------------------------- the echo of a commit */
-
-const echoed = mount({ value: 1 });
-
-retype(echoed, '5');
-press(echoed, 'Enter');
-retype(echoed, '6');
-press(echoed, 'Enter');
-box(echoed).blur();
-
-// The echoes arrive after the user has left the box — the newest first, then
-// the late one, the order a form produced. Taken for the form's own change,
-// the late 5 would be shown, and the user's 6 gone without a word.
-echoed.update({ value: 6 });
-echoed.update({ value: 5 });
-
-check(
-    'a late echo of an earlier commit does not put the older number back',
-    echoed.outputs().value === 6 && box(echoed).value === '6.00' && echoed.notifications() === 2,
-    `${box(echoed).value}, ${echoed.notifications()} write(s)`,
-);
-
-echoed.update({ value: 42 });
-
-check('a value the control never wrote is taken from the form', box(echoed).value === '42.00', box(echoed).value);
-
-const demo = mount({ value: 10 });
-
-retype(demo, '20');
-box(demo).blur();
-demo.update({ value: 10 });
-
-check(
-    "a repeat of the host's last value is not news — the hub demo's re-render keeps what was committed",
-    demo.outputs().value === 20 && box(demo).value === '20.00',
-    box(demo).value,
-);
-
-/* ------------------------------------------------------ the form's states */
-
-const denied = mount({ security: 'no-access', value: null });
-
-check(
-    'a column the user may not read says so, rather than showing an empty box',
-    denied.find('.NumberSlider-field').hidden === true && message(denied) === 'resx:NumberSlider_NoAccess',
-);
-
-check(
-    'read-only for either reason — the form, or the column — disables the box',
-    box(mount({ disabled: true })).disabled === true && box(mount({ security: 'read-only' })).disabled === true,
-);
-
-const invalid = mount({ error: true });
-
-check(
-    "the platform's own validation message is shown, and the box marked invalid",
-    message(invalid) === 'Enter a value with at least three characters.' && box(invalid).getAttribute('aria-invalid') === 'true',
-    message(invalid),
-);
-
-/* ------------------------------------------------------------ either way */
-
-/*
- * **`null` is not `undefined`.** The assertion worth keeping when the rest of
- * the example goes: a cleared column has to travel back as `null`.
- */
-const cleared = mount({});
-
-retype(cleared, '');
-box(cleared).blur();
-
-check(
-    'emptying the box writes null — a clear the platform can act on, not "no change"',
-    cleared.outputs().value === null && cleared.notifications() === 1,
-    `getOutputs() returned ${JSON.stringify(cleared.outputs())}`,
-);
-
-const sized = mount({ width: 320, formFactor: 'phone' });
-
-check(
-    'renders in a phone-sized container',
-    Boolean(box(sized)),
-    `trackContainerResize: ${sized.calls().some((call) => call.indexOf('trackContainerResize') === 0) ? 'called' : 'never called'}`,
-);
-
-check(
-    'renders nothing visible when the host says it is hidden',
-    mount({ visible: false }).container.classList.contains('NumberSlider--hidden'),
-);
+check('Range shows two ranges; every other style one', ranges(mapped).length === 2 && !ranges(mapped)[1].hidden && ranges(plain)[1].hidden);
 
 /* ---------------------------------------------------- what destroy owes */
 

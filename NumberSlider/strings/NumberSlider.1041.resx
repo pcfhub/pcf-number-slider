@@ -81,13 +81,7 @@
     <value>値</value>
   </data>
   <data name="value_Desc" xml:space="preserve">
-    <value>このコントロールが読み書きする列。</value>
-  </data>
-  <data name="placeholder_Name" xml:space="preserve">
-    <value>プレースホルダー</value>
-  </data>
-  <data name="placeholder_Desc" xml:space="preserve">
-    <value>フィールドが空のときに表示されるヒント テキスト。</value>
+    <value>コントロールが読み書きする数値列。スタイルが範囲のときは範囲の下限です。</value>
   </data>
   <data name="NumberSlider_NoAccess" xml:space="preserve">
     <value>この値にアクセスする権限がありません。</value>
@@ -100,5 +94,74 @@
   </data>
   <data name="NumberSlider_OutOfRange" xml:space="preserve">
     <value>{0} から {1} までの数値を入力してください。</value>
+  </data>
+  <data name="upperValue_Name" xml:space="preserve">
+    <value>上限値</value>
+  </data>
+  <data name="upperValue_Desc" xml:space="preserve">
+    <value>範囲のみ: 範囲の上限を保持する数値列。</value>
+  </data>
+  <data name="style_Name" xml:space="preserve">
+    <value>スタイル</value>
+  </data>
+  <data name="style_Desc" xml:space="preserve">
+    <value>数値の表示方法: スライダー、2 列の範囲、ステッパー、または読み取り専用のバーか円弧。</value>
+  </data>
+  <data name="style_Slider" xml:space="preserve">
+    <value>スライダー</value>
+  </data>
+  <data name="style_Range" xml:space="preserve">
+    <value>範囲 (2 列)</value>
+  </data>
+  <data name="style_Stepper" xml:space="preserve">
+    <value>ステッパー</value>
+  </data>
+  <data name="style_Bar" xml:space="preserve">
+    <value>ゲージ: バー</value>
+  </data>
+  <data name="style_Arc" xml:space="preserve">
+    <value>ゲージ: 円弧</value>
+  </data>
+  <data name="min_Name" xml:space="preserve">
+    <value>最小値</value>
+  </data>
+  <data name="min_Desc" xml:space="preserve">
+    <value>最小の値。空欄の場合は列の最小値、または 0。</value>
+  </data>
+  <data name="max_Name" xml:space="preserve">
+    <value>最大値</value>
+  </data>
+  <data name="max_Desc" xml:space="preserve">
+    <value>最大の値。空欄の場合は列の最大値、または 100。</value>
+  </data>
+  <data name="step_Name" xml:space="preserve">
+    <value>ステップ</value>
+  </data>
+  <data name="step_Desc" xml:space="preserve">
+    <value>1 ステップで値が変わる量。空欄の場合は 1。</value>
+  </data>
+  <data name="valueBox_Name" xml:space="preserve">
+    <value>値ボックス</value>
+  </data>
+  <data name="valueBox_Desc" xml:space="preserve">
+    <value>正確な値を入力するボックスをスライダーの横に表示します。</value>
+  </data>
+  <data name="valueBox_Show" xml:space="preserve">
+    <value>表示</value>
+  </data>
+  <data name="valueBox_Hide" xml:space="preserve">
+    <value>非表示</value>
+  </data>
+  <data name="unit_Name" xml:space="preserve">
+    <value>単位</value>
+  </data>
+  <data name="unit_Desc" xml:space="preserve">
+    <value>値の後に表示するテキスト (% や km など)。</value>
+  </data>
+  <data name="bands_Name" xml:space="preserve">
+    <value>色の帯</value>
+  </data>
+  <data name="bands_Desc" xml:space="preserve">
+    <value>しきい値ごとの色 (低い順)。例: 50 danger; 80 warning; 100 success</value>
   </data>
 </root>

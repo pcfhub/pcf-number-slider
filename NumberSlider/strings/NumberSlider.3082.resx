@@ -81,13 +81,7 @@
     <value>Valor</value>
   </data>
   <data name="value_Desc" xml:space="preserve">
-    <value>La columna que este control lee y escribe.</value>
-  </data>
-  <data name="placeholder_Name" xml:space="preserve">
-    <value>Marcador de posición</value>
-  </data>
-  <data name="placeholder_Desc" xml:space="preserve">
-    <value>Texto de sugerencia que se muestra mientras el campo está vacío.</value>
+    <value>La columna numérica que el control lee y escribe; el inicio del intervalo cuando el estilo es Intervalo.</value>
   </data>
   <data name="NumberSlider_NoAccess" xml:space="preserve">
     <value>No tiene acceso a este valor.</value>
@@ -100,5 +94,74 @@
   </data>
   <data name="NumberSlider_OutOfRange" xml:space="preserve">
     <value>Escriba un número entre {0} y {1}.</value>
+  </data>
+  <data name="upperValue_Name" xml:space="preserve">
+    <value>Valor superior</value>
+  </data>
+  <data name="upperValue_Desc" xml:space="preserve">
+    <value>Solo para Intervalo: la columna numérica que contiene el final del intervalo.</value>
+  </data>
+  <data name="style_Name" xml:space="preserve">
+    <value>Estilo</value>
+  </data>
+  <data name="style_Desc" xml:space="preserve">
+    <value>Cómo se muestra el número: un control deslizante, un intervalo de dos columnas, un control de pasos o una barra o un arco de solo lectura.</value>
+  </data>
+  <data name="style_Slider" xml:space="preserve">
+    <value>Control deslizante</value>
+  </data>
+  <data name="style_Range" xml:space="preserve">
+    <value>Intervalo (dos columnas)</value>
+  </data>
+  <data name="style_Stepper" xml:space="preserve">
+    <value>Control de pasos</value>
+  </data>
+  <data name="style_Bar" xml:space="preserve">
+    <value>Indicador: barra</value>
+  </data>
+  <data name="style_Arc" xml:space="preserve">
+    <value>Indicador: arco</value>
+  </data>
+  <data name="min_Name" xml:space="preserve">
+    <value>Mínimo</value>
+  </data>
+  <data name="min_Desc" xml:space="preserve">
+    <value>El valor más bajo. En blanco: el mínimo de la columna, o 0.</value>
+  </data>
+  <data name="max_Name" xml:space="preserve">
+    <value>Máximo</value>
+  </data>
+  <data name="max_Desc" xml:space="preserve">
+    <value>El valor más alto. En blanco: el máximo de la columna, o 100.</value>
+  </data>
+  <data name="step_Name" xml:space="preserve">
+    <value>Paso</value>
+  </data>
+  <data name="step_Desc" xml:space="preserve">
+    <value>Cuánto cambia el valor en un paso. En blanco: 1.</value>
+  </data>
+  <data name="valueBox_Name" xml:space="preserve">
+    <value>Cuadro de valor</value>
+  </data>
+  <data name="valueBox_Desc" xml:space="preserve">
+    <value>Muestra un cuadro junto al control deslizante para escribir un valor exacto.</value>
+  </data>
+  <data name="valueBox_Show" xml:space="preserve">
+    <value>Mostrar</value>
+  </data>
+  <data name="valueBox_Hide" xml:space="preserve">
+    <value>Ocultar</value>
+  </data>
+  <data name="unit_Name" xml:space="preserve">
+    <value>Unidad</value>
+  </data>
+  <data name="unit_Desc" xml:space="preserve">
+    <value>Texto que se muestra después del valor, como % o km.</value>
+  </data>
+  <data name="bands_Name" xml:space="preserve">
+    <value>Bandas de color</value>
+  </data>
+  <data name="bands_Desc" xml:space="preserve">
+    <value>Colores por umbral, del más bajo al más alto, por ejemplo: 50 danger; 80 warning; 100 success.</value>
   </data>
 </root>
