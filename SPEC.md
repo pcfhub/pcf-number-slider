@@ -369,14 +369,13 @@ Import `NumberSlider_0.1.0` (unmanaged) over the probe on cll365; the
 | W7 | Dark mode (`?flags=themingEnabled=true` or the app's dark theme) and a narrow window (~280 px for the section) | Fluent's dark colours; the box wraps under the track |
 | W8 | A canvas screen: the control on a number variable, OnChange `Set(n, n + 1)` | One OnChange per release; Minimum/Maximum needed (no column metadata) |
 
+**Passed on the form, 3 Oct 2026** — W1–W8, run by the user on cll365 with
+`NumberSliderSolution` 0.1.0 imported over the probe.
+
 ## Not verified
 
-- **All of W1–W8.** 0.1.0 has run in the rig (232 checks, every guard
-  mutation-tested) and in a browser (`dev/preview.html`, `dev/shots.js`), not
-  yet on the form.
 - **P9, a phone.** `touch-action: none` on the track is the intended answer;
   nobody has dragged it on a phone.
-- **P10, a canvas app** — W8 asks it.
 - **A record in a non-base currency** (P2: the org has only USD).
 - **A column under field-level security** (P7 ran only the read-only form).
 - **A Business-required column cleared** (P3 did not run it).
