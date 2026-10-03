@@ -202,6 +202,37 @@ has no command for (columns, the tab, the records):
 - A second pass arrives about 2.7 s after load with `updatedProperties:
   ["orgSettings"]` and nothing else changed — a reason to keep renders cheap.
 
+### P2 — currency (2026-10-03)
+
+The record's currency is US Dollar, the organisation's only one; the read-back
+gives `revenue` 1500000 and `$1,500,000.00`, the same as the bound
+property's `formatted`. **Not verified:** a record in a non-base currency.
+
+### P3 — writes the column cannot hold (2026-10-03)
+
+| Write | What came back | Saved |
+| --- | --- | --- |
+| `cll_score` 150 (max 100) | `raw: 150`, **`error: true`, `errorMessage: "Enter a number between 0.00 and 100.00."`**, form dirty | **No** — the server still holds 1.23 |
+| `cll_score` 1.23456 (precision 2) | **`raw: 1.23` within 138 ms**, no error | 1.23 |
+| `numberofemployees` 3.5 (whole) | **`raw: 4`** within about 130 ms, no error | 4 |
+
+- **Out of range is the form's refusal, said in its own words**: the bound
+  property's `error`/`errorMessage` is set and Save does not go through. The
+  control keeps a drag inside the range (a native range clamps) and the box
+  refuses a typed value beyond it before the form has to.
+- **Extra places and fractions are rounded on the way in, silently** — 1.23456
+  became 1.23, and 3.5 became 4 in a whole-number column, with no message.
+  So the control rounds to `Precision` itself before writing (its echo then
+  equals its write), and **a whole-number column never gets a fraction from
+  it**: the form would quietly change what the user chose.
+- A release on the slider (`cll_score`, step 0.5) gave `pointerdown` →
+  `input` 5.5 → `pointerup` → **one** `change` → one write, echoed about
+  245 ms later. **Every write anywhere re-renders every control** on the
+  form with `updatedProperties: ["value", "parameters"]` — each instance got
+  that pass when another's value changed — so `updatedProperties` cannot say
+  whether this control's own value moved; compare the value.
+- Not run: `null` into a Business-required column.
+
 ## Demo
 
 `full` is the candidate: no `<feature-usage>`, no Web API, nothing leaves the
