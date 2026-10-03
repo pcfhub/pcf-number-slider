@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<!--
+  A stand-in for the hub's component page: frames PCFHub's demo harness and
+  answers its handshake with this control's manifest, its strings, its
+  stylesheet, a preset from pcfhub.json and demo/fixture.json — so the control
+  runs inside the real harness, against the real stand-in Dataverse, before
+  anything is published (pcf-file-preview's page, pointed here).
+
+      npm run harness -- --no-open --port 8108          # this repository
+      npm run dev:demo-harness   (in ../pcfhub, port 4174)
+
+  then open http://localhost:8108/dev/hub-demo.html?preset=seats. The frame is
+  sandboxed as the hub's is (allow-scripts only), so the page cannot reach
+  inside it: what the harness says comes back as messages, listed under the
+  frame and kept in `window.__messages`. `window.__send(type, fields)` posts
+  one to the harness — `harness:updateProps` is how the hub's property panel
+  changes an input on a mounted control.
+
+    ?preset=<slug>        a preset from pcfhub.json; the default one otherwise
+    ?width=373            the frame's width, to narrow the control
+    ?harness=http://localhost:4174   where the harness is served
+
+  The manifest below is what the hub's ingestion makes of this one: a property
+  declared with `of-type-group` is demoed as the group's first member, so both
+  bound properties are Decimal here (SPEC.md, *What the hub's demo does to a
+  type group*).
+-->
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Number Slider — in the hub's demo harness</title>
+    <style>
+        body { margin: 0; padding: 24px; font-family: "Segoe UI", sans-serif; background: #f0f0f0; }
+        iframe { display: block; height: 360px; border: 1px solid #d1d1d1; background: #fff; }
+        #log { margin-top: 12px; max-width: 900px; font: 12px/1.5 Consolas, monospace; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <iframe id="frame" sandbox="allow-scripts" title="demo"></iframe>
+    <div id="log"></div>
+    <script>
+        (async function () {
+            'use strict';
+
+            var params = new URLSearchParams(location.search);
+            var harness = params.get('harness') || 'http://localhost:4174';
+            var width = Number(params.get('width')) || 640;
+            var session = 'stand-in-' + Math.random().toString(36).slice(2);
+            var frame = document.getElementById('frame');
+            var logBox = document.getElementById('log');
+            var messages = [];
+
+            frame.style.width = width + 'px';
+            window.__messages = messages;
+
+            function log(line) {
+                logBox.textContent += line + '\n';
+            }
+
+            var base = location.origin;
+            var resx = await (await fetch('../NumberSlider/strings/NumberSlider.1033.resx')).text();
+            var strings = {};
+
+            new DOMParser().parseFromString(resx, 'application/xml').querySelectorAll('data').forEach(function (node) {
+                strings[node.getAttribute('name')] = node.querySelector('value').textContent;
+            });
+
+            var css = await (await fetch('../out/controls/NumberSlider/css/NumberSlider.css')).text();
+            var fixture = await (await fetch('../demo/fixture.json')).json();
+            var hub = await (await fetch('../pcfhub.json')).json();
+            var presets = hub.demo.presets;
+            var preset = presets.find(function (p) { return p.slug === params.get('preset'); })
+                || presets.find(function (p) { return p.isDefault; });
+
+            log('preset: ' + preset.slug);
+
+            var manifest = {
+                component: { slug: hub.slug, name: hub.name },
+                version: '0.1.0',
+                framework: 'standard',
+                controlType: 'field',
+                namespace: 'PCFHub',
+                constructor: 'NumberSlider',
+                bundleUrl: base + '/out/controls/NumberSlider/bundle.js',
+                styles: [css],
+                resources: { strings: { 'en-US': strings } },
+                properties: [
+                    { name: 'value', kind: 'bound', ofType: 'Decimal', required: true },
+                    { name: 'upperValue', kind: 'bound', ofType: 'Decimal' },
+                    { name: 'style', kind: 'input', ofType: 'Enum', default: 'slider' },
+                    { name: 'min', kind: 'input', ofType: 'Decimal' },
+                    { name: 'max', kind: 'input', ofType: 'Decimal' },
+                    { name: 'step', kind: 'input', ofType: 'Decimal' },
+                    { name: 'valueBox', kind: 'input', ofType: 'Enum', default: 'show' },
+                    { name: 'unit', kind: 'input', ofType: 'SingleLine.Text' },
+                    { name: 'bands', kind: 'input', ofType: 'SingleLine.Text' },
+                ],
+                featureUsage: [],
+                fidelity: hub.demo.fidelity,
+            };
+
+            window.__props = Object.assign({}, preset.props);
+            window.__send = function (type, fields) {
+                frame.contentWindow.postMessage(Object.assign({ v: 1, sessionId: session, type: type }, fields), '*');
+                log('→ ' + type + ' ' + JSON.stringify(fields));
+            };
+
+            window.addEventListener('message', function (event) {
+                var data = event.data || {};
+
+                if (data.sessionId !== session) {
+                    return;
+                }
+
+                messages.push(data);
+
+                if (data.type === 'harness:hello') {
+                    window.__send('harness:init', {
+                        manifest: manifest,
+                        props: window.__props,
+                        theme: params.get('theme') || 'light',
+                        locale: 'en-US',
+                        datasetFixture: fixture,
+                        width: width - 40,
+                        height: -1,
+                        formFactor: 1,
+                    });
+                    return;
+                }
+
+                var detail = data.type === 'harness:log' ? data.level + ': ' + data.message
+                    : data.type === 'harness:error' ? data.phase + ': ' + (data.error && data.error.message)
+                    : data.type === 'harness:outputChanged' ? JSON.stringify(data.outputs)
+                    : '';
+
+                log('← ' + data.type + (detail ? '  ' + detail : ''));
+            });
+
+            frame.src = harness + '/?session=' + encodeURIComponent(session);
+        })();
+    </script>
+</body>
+</html>

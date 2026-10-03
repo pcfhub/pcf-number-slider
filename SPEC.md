@@ -343,6 +343,16 @@ the order. The harness also hands no `Precision` and no `Type` (only
 Decimal is "unknown", which takes any step. Hub harness `precision` (plan F) is
 not needed for that; the control is right without it.
 
+**Run in the real harness, 3 Oct 2026** (pcfhub main 57959f4 on 4174,
+`dev/hub-demo.html` as the parent, headless CDP into the sandboxed frame):
+every preset mounted with no harness error and did what its description
+says — one `outputChanged` per release, per stepper press and per committed
+box; the range's thumbs stopped at each other and wrote both columns; an
+emptied box handed back `null`; 2,000,000 was refused with the range; the
+gauges and the out-of-range value wrote nothing. An input changed after mount
+(`harness:updateProps`: step, bands, then style) kept the value already
+chosen. At 373 px and in the dark theme nothing overflowed.
+
 ## Walkthrough W1–W8 — 0.1.0 on the form
 
 Import `NumberSlider_0.1.0` (unmanaged) over the probe on cll365; the
@@ -372,7 +382,6 @@ Import `NumberSlider_0.1.0` (unmanaged) over the probe on cll365; the
 - **A Business-required column cleared** (P3 did not run it).
 - **P6's second half:** whether a change to a column bound to Maximum reaches
   `updateView`.
-- **The hub demo**, until a real-harness run of every preset.
 
 ## Promoting a finding
 
