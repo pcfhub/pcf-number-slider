@@ -250,6 +250,18 @@ saves exactly as the first. The unmapped shape was already measured in P1 on
 the four instances with no upper column (`type: null`, `attributes: {}`,
 `security: {}`), so the designer half of P5 was not needed.
 
+### P8 — keys on a focused range, on the form (2026-10-03)
+
+On `numberofemployees` (the probe's range 0..100, step 1): a click (focus,
+`input` 5, one `change`), then → → → (6, 7, 8), Page Up (18), Home (0),
+End (100), Tab (blur). **Every key reached the range** — `defaultPrevented`
+false on each, none taken by the form — and **each press fired `input` and
+`change` together**, so each wrote once; each value came back 200–350 ms
+later. **The native range carries the keyboard**: 0.1.0 handles no keys
+itself on the slider. Page Up's +10 cannot tell "ten steps" from "a tenth of
+the range" on a 0..100 slider; with a real column range the walkthrough
+looks again.
+
 ## Demo
 
 `full` is the candidate: no `<feature-usage>`, no Web API, nothing leaves the
