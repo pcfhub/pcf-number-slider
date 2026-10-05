@@ -8,6 +8,10 @@ order: 1
 
 Drag, step or type a number into any number column, or show one as a gauge.
 
+:::callout{type=warning}
+**Reference example · built with AI.** This control was written with AI (Claude) and tested on a live Dataverse form; its code has not been reviewed line by line. It is published as a worked example and is not maintained — read the source and [SPEC.md](https://github.com/pcfhub/pcf-number-slider/blob/main/SPEC.md) (what was measured on the form) before you use it. Fixes are not guaranteed.
+:::
+
 ::image{src=media/states-light.png alt="Twelve Number Slider fields: a slider at 72.50 with its value box; a currency slider at $250,000.00; a green-banded slider at 85.00%; a two-thumb range from 10 to 400; a stepper at 3 with minus and plus buttons; an orange bar gauge at 42.00%; a blue arc gauge reading 72.50; a greyed read-only slider; an empty slider with its thumb at the start; a slider at 150.00 with a note that the saved value is outside the range of 0.00 to 100.00; a slider with no value box; and a range with no second column, saying to choose one."}
 
 The platform's own number controls — Linear Slider, Linear Gauge, the Arc and

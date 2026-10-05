@@ -8,6 +8,8 @@
   "category": "input",
   "hosts": ["canvas", "model-driven"],
   "tags": ["accessible", "localised", "dark-mode", "no-dependencies", "slider", "gauge", "number"],
+  "supportLevel": "reference",
+  "builtWith": "ai",
 
   "control": {
     "namespace": "PCFHub",
