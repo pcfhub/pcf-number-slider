@@ -18,6 +18,8 @@
 
     ?preset=<slug>        a preset from pcfhub.json; the default one otherwise
     ?width=373            the frame's width, to narrow the control
+    ?height=360           a fixed frame height; by default the frame takes the
+                          height the harness reports (harness:resize), as the hub's does
     ?harness=http://localhost:4174   where the harness is served
 
   The manifest below is what the hub's ingestion makes of this one: a property
@@ -51,6 +53,10 @@
             var messages = [];
 
             frame.style.width = width + 'px';
+
+            if (params.get('height')) {
+                frame.style.height = Number(params.get('height')) + 'px';
+            }
             window.__messages = messages;
 
             function log(line) {
@@ -126,6 +132,14 @@
                         formFactor: 1,
                     });
                     return;
+                }
+
+                // The hub sizes its frame to the height the harness reports, and
+                // so does this page — a fixed-height frame cannot show a control
+                // whose box is shorter than what it draws, which is what 0.1.0's
+                // arc was (SPEC.md, *The live demo*). ?height=<px> fixes it instead.
+                if (data.type === 'harness:resize' && !params.get('height')) {
+                    frame.style.height = data.height + 'px';
                 }
 
                 var detail = data.type === 'harness:log' ? data.level + ': ' + data.message
