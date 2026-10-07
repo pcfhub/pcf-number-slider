@@ -679,11 +679,31 @@ const SEATS = {
 /* Canvas */
 {
     const canvas = mount({ column: 'Quantity', valueType: 'Whole.None', value: 3, host: 'canvas', inputs: { step: 0.5 } });
-    check('canvas: no attributes, so the default scale', rangeOf(canvas).max === '100');
+    check('canvas: no column, so the default scale', rangeOf(canvas).max === '100');
     check('canvas: an exact Whole.None still forbids a fraction', rangeOf(canvas).step === '1');
 
     const group = mount({ column: 'Quantity', valueType: 'Whole.None', value: 3, host: 'canvas', typeReport: 'group', inputs: { step: 0.5 } });
     check('canvas, a group string for a type: the maker\'s step stands', rangeOf(group).step === '0.5');
+
+    /*
+     * A canvas app hands the property an `attributes` that describes no
+     * column, and for this control's number group it carries the Decimal
+     * type's `Precision: 2`. Through 0.1.1 that was read as the column's
+     * (a published canvas app, 2026-10-07): a step of 0.001 was drawn as
+     * 0.01, and 0.12345 typed into the box was written as 0.12.
+     */
+    const fine = mount({ column: 'Rate', valueType: 'Decimal', value: 0.125, host: 'canvas', inputs: { min: 0, max: 1, step: 0.001 } });
+    check('canvas: a step finer than two places stands', rangeOf(fine).step === '0.001', rangeOf(fine).step);
+    check('canvas: and a value with three places is drawn where it is', rangeOf(fine).value === '0.125', rangeOf(fine).value);
+
+    type(fine, '0.12345');
+    check('canvas: a typed value is written as typed, not rounded to two places', fine.outputs().value === 0.12345, JSON.stringify(fine.outputs()));
+
+    const onForm = mount({ column: 'cll_rate', valueType: 'Decimal', value: 0.125, precision: 2, minValue: 0, maxValue: 1, inputs: { step: 0.001 } });
+    check('on a form a two-place column still floors the step at 0.01', rangeOf(onForm).step === '0.01', rangeOf(onForm).step);
+
+    type(onForm, '0.12345');
+    check('and still rounds what is typed to what the column keeps', onForm.outputs().value === 0.12, JSON.stringify(onForm.outputs()));
 }
 
 /* The range */
@@ -1334,8 +1354,8 @@ function typedColumnSelfCheck() {
 
     const text = value({});
     check(
-        "rig: a text column's value keeps its shape — MaxLength and the two names, no formatted",
-        keys(text.attributes) === 'DisplayName,LogicalName,MaxLength' && !('formatted' in text),
+        "rig: a text column's value keeps its shape — MaxLength, the table and the two names, no formatted",
+        keys(text.attributes) === 'DisplayName,EntityLogicalName,LogicalName,MaxLength' && !('formatted' in text),
         keys(text.attributes),
     );
 
@@ -1360,9 +1380,24 @@ function typedColumnSelfCheck() {
         decimal.formatted === '1,234.5' && whole.formatted === '42' && money.formatted === '$1,500.00' && fp.formatted === undefined && fp.raw === null,
         [decimal.formatted, whole.formatted, money.formatted, fp.formatted].join(' | '),
     );
+    const inCanvas = value({ valueType: 'Whole.None', value: 3, host: 'canvas' });
     check(
-        'rig: a canvas host hands a number column no attributes at all',
-        value({ valueType: 'Decimal', value: 3, host: 'canvas' }).attributes === undefined,
+        'rig: a canvas host describes the property, not a column: no table, its own name, and the Decimal placeholder whatever is bound',
+        inCanvas.attributes.EntityLogicalName === '' && inCanvas.attributes.LogicalName === 'value'
+            && inCanvas.attributes.Precision === 2 && inCanvas.attributes.Type === 'decimal'
+            && inCanvas.security.editable === true && inCanvas.security.secured === false,
+        JSON.stringify(inCanvas.attributes),
+    );
+    check(
+        'rig: and a form names the table the column is on',
+        value({ valueType: 'Decimal', value: 3 }).attributes.EntityLogicalName === 'account',
+    );
+    check(
+        'columnOf: a table\'s name makes a column; an empty one, an unmapped property and nothing at all do not',
+        N.columnOf(value({ valueType: 'Decimal', value: 3 })) !== undefined
+            && N.columnOf(inCanvas) === undefined
+            && N.columnOf({ attributes: {} }) === undefined
+            && N.columnOf({}) === undefined && N.columnOf(undefined) === undefined,
     );
 
     const group = ['Whole.None', 'Decimal', 'FP', 'Currency'];

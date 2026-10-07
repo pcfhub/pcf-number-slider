@@ -10,7 +10,7 @@
 
 export type Kind = 'whole' | 'fractional' | 'unknown';
 
-/** What a bound number column says about itself, from `attributes` (model-driven) or `type` alone (canvas). */
+/** What a bound number column says about itself, from a column's `attributes` (model-driven) or `type` alone (canvas). */
 export interface Column {
     kind: Kind;
     /** Decimal places the column stores; null where nothing says (a canvas app). */
@@ -54,12 +54,32 @@ const TYPE_NAMES: Record<string, string> = {
 const FALLBACK = { min: 0, max: 100 };
 
 /**
+ * The column behind a bound property, when there is one.
+ *
+ * A model-driven form describes the column in `attributes`. A canvas app hands
+ * over an `attributes` too, for every source, and it describes the *property*:
+ * an empty `EntityLogicalName`, the property's own name as `LogicalName`, and
+ * for this control's number group the Decimal type's `Precision: 2` — over a
+ * formula, a variable or a whole-number Dataverse column alike (read in a
+ * published canvas app, 2026-10-07). Through 0.1.1 that 2 was taken for a
+ * column's: a step of 0.001 became 0.01 and a typed 0.12345 was written as
+ * 0.12. So `attributes` being there says nothing; a table's name in it does.
+ */
+export function columnOf(parameter: { attributes?: unknown } | null | undefined): Record<string, unknown> | undefined {
+    const attributes = parameter?.attributes as Record<string, unknown> | null | undefined;
+
+    return typeof attributes?.EntityLogicalName === 'string' && attributes.EntityLogicalName !== ''
+        ? attributes
+        : undefined;
+}
+
+/**
  * Read the column.
  *
  * **Every number column carries `Precision`, and a whole number's is 0** — it
  * carries `Format: "0"` as well (P1). So `Precision === 0` means whole and more
- * means fractional; its mere presence proves nothing. Without `attributes` (a
- * canvas app) an exact `Whole.None` is still a whole number — `type` was the
+ * means fractional; its mere presence proves nothing. Without a column (a
+ * canvas app — see `columnOf`) an exact `Whole.None` is still a whole number — `type` was the
  * member on every column P1 read, but a type group may report otherwise, so it
  * is only ever used to forbid a fraction.
  */

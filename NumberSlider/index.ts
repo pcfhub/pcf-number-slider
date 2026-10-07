@@ -5,6 +5,7 @@ import {
     Column,
     Formatter,
     Scale,
+    columnOf,
     display,
     mergeColumns,
     parseNumber,
@@ -236,13 +237,12 @@ export class NumberSlider implements ComponentFramework.StandardControl<IInputs,
             }
         }
 
-        this.column = readColumn(lower.attributes as unknown as Record<string, unknown>, lower.type);
+        // A column's `attributes` only: a canvas app's describe the property,
+        // and its `Precision: 2` belongs to no column. See `columnOf`.
+        this.column = readColumn(columnOf(lower), lower.type);
 
         if (isRange && this.upperMapped()) {
-            this.column = mergeColumns(
-                this.column,
-                readColumn(upper.attributes as unknown as Record<string, unknown>, upper.type),
-            );
+            this.column = mergeColumns(this.column, readColumn(columnOf(upper), upper.type));
         }
 
         // A blank input arrives as `null`, and PCFHub's demo hands a manifest
@@ -435,7 +435,7 @@ export class NumberSlider implements ComponentFramework.StandardControl<IInputs,
      */
     private paintMessage(): void {
         const parameter = this.context.parameters.value;
-        const modelDriven = parameter.attributes !== undefined;
+        const modelDriven = columnOf(parameter) !== undefined;
         const text = this.fault !== null
             ? this.describe(this.fault.key)
             : parameter.error && !modelDriven ? parameter.errorMessage : '';

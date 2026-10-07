@@ -90,8 +90,20 @@
             label: 'canvas app',
             publishesTheme: false,
             publishesMetadata: false,
+            /*
+             * No column metadata, and an `attributes` all the same: a canvas
+             * app describes the *property*. `placeholderAttributes` has the
+             * values.
+             */
+            describesNoColumn: true,
         },
     };
+
+    /**
+     * What every bound property reported for `security` in a canvas app
+     * (2026-10-06): never `undefined`, always open.
+     */
+    var CANVAS_SECURITY = { editable: true, readable: true, secured: false };
 
     /**
      * How the column's field-level security is configured.
@@ -303,7 +315,9 @@
      * gives one, and the two names.
      */
     function typedAttributes(type, spec) {
-        var names = { LogicalName: spec.column, DisplayName: spec.label };
+        // `EntityLogicalName` is the table, and it is how a control knows a
+        // column is behind the value: a canvas app leaves it empty.
+        var names = { EntityLogicalName: spec.table, LogicalName: spec.column, DisplayName: spec.label };
         var number = NUMBER_TYPES[type];
 
         if (number) {
@@ -835,6 +849,13 @@
          */
         valueType: 'SingleLine.Text',
         column: 'name',
+        /** The table that column is on: what `attributes.EntityLogicalName` answers on a form. */
+        table: 'account',
+        /**
+         * The one type this control's number group is in a canvas app,
+         * whatever is bound: its placeholder is the one handed over there.
+         */
+        canvasType: 'Decimal',
         target: 'account',
         targetMethod: 'present',
 
@@ -1986,8 +2007,66 @@
         };
     }
 
+    /**
+     * What a canvas app hands a bound property as `attributes`: a description
+     * of the *property*, the same for a literal, a variable, a collection and
+     * a Dataverse column (a probe control in a published canvas app,
+     * 2026-10-06). The property's own name stands where a column's would, the
+     * table is empty, and the limits belong to the type and to no column:
+     * `MaxLength: 100` on every type, a decimal's `Precision: 2`, a whole
+     * number's 0.
+     *
+     * **The tell is `EntityLogicalName`: empty here, the table's name on a
+     * form.** `attributes` being present says nothing: both hosts hand one over.
+     */
+    function placeholderAttributes(type, name) {
+        var shared = {
+            EntityLogicalName: '',
+            LogicalName: name,
+            DisplayName: name,
+            RequiredLevel: 0,
+            IsSecured: false,
+            SourceType: null,
+            DefaultValue: '',
+            ImeMode: 0,
+            MaxLength: 100,
+        };
+        var generic = { MinValue: -100000000000, MaxValue: 100000000000, Precision: 2, Behavior: 0, Options: null };
+
+        switch (type) {
+            case 'SingleLine.Text':
+                return Object.assign(shared, generic, { Type: 'string', Format: 'Text' });
+            case 'Whole.None':
+                return Object.assign(shared, generic, {
+                    Type: 'integer', Format: '0', MinValue: -2147483648, MaxValue: 2147483647, Precision: 0,
+                });
+            case 'Decimal':
+                return Object.assign(shared, generic, { Type: 'decimal', Format: '1' });
+            default:
+                return shared;
+        }
+    }
+
+    /**
+     * `attributes` for a bound property on this host: the column's on a form,
+     * the placeholder in a canvas app.
+     *
+     * **In a canvas app a type group is one fixed type, whatever is bound.**
+     * This control's number group behaved as Decimal there — two decimal
+     * places, over a formula and over a whole-number Dataverse column alike
+     * (2026-10-07) — so `canvasType` and not the column's type picks the
+     * placeholder.
+     */
+    function attributesFor(host, o, type, name, spec) {
+        if (host.publishesMetadata) {
+            return typedAttributes(type, spec);
+        }
+
+        return host.describesNoColumn ? placeholderAttributes(o.canvasType || type, name) : undefined;
+    }
+
     /** A bound property beyond the first — see `bound` in DEFAULTS. */
-    function boundProperty(spec, host, o) {
+    function boundProperty(spec, host, o, name) {
         if (spec === 'unmapped') {
             return {
                 type: null,
@@ -2006,18 +2085,19 @@
         var property = Object.assign({
             type: reportedType(spec.type, spec.typeGroup || o.typeGroup, o.typeReport),
             raw: raw,
-            attributes: host.publishesMetadata
-                ? typedAttributes(spec.type, {
-                    column: spec.column,
-                    label: spec.label || spec.column,
-                    minValue: spec.minValue,
-                    maxValue: spec.maxValue,
-                    precision: spec.precision,
-                    requiredLevel: spec.requiredLevel,
-                    optionLabels: spec.optionLabels,
-                })
-                : undefined,
-            security: spec.security !== undefined ? SECURITY[spec.security] : undefined,
+            attributes: attributesFor(host, o, spec.type, name, {
+                table: spec.table || o.table,
+                column: spec.column,
+                label: spec.label || spec.column,
+                minValue: spec.minValue,
+                maxValue: spec.maxValue,
+                precision: spec.precision,
+                requiredLevel: spec.requiredLevel,
+                optionLabels: spec.optionLabels,
+            }),
+            security: spec.security !== undefined
+                ? SECURITY[spec.security]
+                : host.describesNoColumn ? Object.assign({}, CANVAS_SECURITY) : undefined,
             error: false,
             errorMessage: undefined,
         }, typedFormatted(spec.type, raw, spec.precision, o.locale, spec.optionLabels));
@@ -3181,7 +3261,9 @@
         }
 
         var host = HOSTS[o.host] || HOSTS['model-driven'];
-        var security = SECURITY[o.security];
+        var security = host.describesNoColumn && o.security === 'none'
+            ? Object.assign({}, CANVAS_SECURITY)
+            : SECURITY[o.security];
         var clientUrl = o.clientUrl || nextClientUrl();
         var isLookup = o.valueType === 'Lookup.Simple';
         // This host's own rows — see `fixtureFor`.
@@ -3215,7 +3297,7 @@
         });
 
         Object.keys(o.bound || {}).forEach(function (name) {
-            parameters[name] = boundProperty(o.bound[name], host, o);
+            parameters[name] = boundProperty(o.bound[name], host, o, name);
         });
 
         return {
@@ -3230,26 +3312,24 @@
                 value: Object.assign({
                     raw: o.value,
                     /*
-                     * Present only where the host has column metadata.
-                     *
-                     * The control reads `parameter.attributes?.MaxLength`, and
-                     * that single `?` is the whole canvas/model-driven
-                     * difference. Supplying it on canvas would hide the one bug
-                     * this switch exists to find. A number or a yes/no column
-                     * carries its own members instead — see `typedAttributes`.
+                     * The column's on a form, with the table it is on. In a
+                     * canvas app an `attributes` is there as well and describes
+                     * no column: the tell is `EntityLogicalName`, a table's
+                     * name here and empty there. This rig said `undefined` for
+                     * canvas until 2026-10-07, and that hid the precision a
+                     * canvas app reports for no column.
                      */
-                    attributes: host.publishesMetadata
-                        ? typedAttributes(o.valueType, {
-                            column: o.column,
-                            label: o.label,
-                            maxLength: o.maxLength,
-                            minValue: o.minValue,
-                            maxValue: o.maxValue,
-                            precision: o.precision,
-                            requiredLevel: o.requiredLevel,
-                            optionLabels: o.optionLabels,
-                        })
-                        : undefined,
+                    attributes: attributesFor(host, o, o.valueType, 'value', {
+                        table: o.table,
+                        column: o.column,
+                        label: o.label,
+                        maxLength: o.maxLength,
+                        minValue: o.minValue,
+                        maxValue: o.maxValue,
+                        precision: o.precision,
+                        requiredLevel: o.requiredLevel,
+                        optionLabels: o.optionLabels,
+                    }),
                     /*
                      * `undefined` unless the column carries a field-level
                      * security profile — see SECURITY above. The common case is
@@ -3915,6 +3995,8 @@
     return {
         HOSTS: HOSTS,
         SECURITY: SECURITY,
+        CANVAS_SECURITY: CANVAS_SECURITY,
+        placeholderAttributes: placeholderAttributes,
         STRINGS: STRINGS,
         DEFAULTS: DEFAULTS,
         FORM_FACTORS: FORM_FACTORS,

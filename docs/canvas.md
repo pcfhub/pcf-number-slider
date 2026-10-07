@@ -17,10 +17,25 @@ order: 4
 
 ## Set the range
 
-A canvas app hands a control no column metadata, so the control cannot see a
-column's minimum, maximum or decimal places. Blank **Minimum** and **Maximum**
-are 0 and 100 there. Set them, and set **Step** to what the column can hold —
-`1` for a whole number, `0.01` for two decimal places.
+A canvas app does not describe the column behind a value, even when the value
+comes from Dataverse, so the control cannot see a column's minimum, maximum or
+decimal places. Blank **Minimum** and **Maximum** are 0 and 100 there. Set
+them, and set **Step** to what the column can hold — `1` for a whole number,
+`0.01` for two decimal places. The control cannot refuse a fraction for a
+whole-number column in a canvas app: the box takes what is typed.
+
+:::callout{type=warning}
+**0.1.1 and earlier held every canvas value to two decimal places.** A canvas
+app reports two decimal places for any number property, whatever it is bound
+to, and those versions took that for the column's: a **Step** of `0.001` was
+drawn as `0.01`, and `0.12345` typed into the box was written as `0.12`. 0.1.2
+takes a precision only from a real column, so a canvas value is written as
+typed and the step is the one you set.
+
+Importing 0.1.2 does not update an app that already has the control. Open the
+app in Studio after the import, accept **Update code components**, then save
+and publish — if Save is greyed out, change any formula first.
+:::
 
 ## OnChange runs once per change
 

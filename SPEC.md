@@ -391,8 +391,53 @@ Import `NumberSlider_0.1.0` (unmanaged) over the probe on cll365; the
 **Passed on the form, 3 Oct 2026** — W1–W8, run by the user on cll365 with
 `NumberSliderSolution` 0.1.0 imported over the probe.
 
+## 0.1.2 — a canvas app reports a precision for no column
+
+P10 asked whether `attributes` is absent in a canvas app and was never run; the
+control, its comments and its rig assumed it was. It is not. A canvas app hands
+every bound property an `attributes` that describes the *property* — an empty
+`EntityLogicalName`, its own name as `LogicalName` (a probe control in a
+published canvas app, 2026-10-06; `.probe-kit/attributes-probe` beside this
+repository). This control's number group is one fixed type there, and it
+behaved as Decimal: two decimal places, whatever was bound. `readColumn` took
+that 2 for the column's. The members were not read one by one for this
+group; the two-place behaviour below is what was watched.
+
+Read in a published canvas app on 7 October 2026, typing an exact value into
+each box:
+
+| Bound to | 0.1.1 | 0.1.2 |
+| --- | --- | --- |
+| `0.125`, Minimum 0, Maximum 1, Step 0.001 | step drawn as 0.01, thumb at 0.13; typed `0.12345` written as 0.12 | step 0.001, thumb at 0.125; written as 0.12345 |
+| `2.5`, 0 to 10, Step 0.5 | typed `3.14159` written as 3.14 | written as 3.14159 |
+| `42`, nothing else set | 0 to 100, step 1; typed `42.5` written as 42.5 | the same |
+| a whole-number Dataverse column, Step 0.25 | step 0.25; typed `12.75` written as 12.75 | the same |
+
+The last row is the other half: a canvas app does not say the column behind a
+value is a whole number, so nothing here can refuse a fraction for it.
+`docs/canvas.md` already tells the maker to set Step to what the column holds.
+
+**The fix**: `columnOf` in `number.ts` takes `attributes` as a column's only
+when `EntityLogicalName` names a table, and `readColumn` and the "is this a
+form" tell for the platform's error text read through it. The error half was
+never seen in a canvas app (none raised `error`), so it rests on the rig.
+
+**The rig was the reason nothing failed.** `dev/host.js` modelled canvas as
+`attributes: undefined`. It hands over the Decimal placeholder now, whatever
+type is bound, and against the 0.1.1 code four assertions fail — one of them,
+"in a canvas app the platform's message is printed", had been passing against
+a host that does not exist.
+
 ## Not verified
 
+- **0.1.2 on a model-driven form.** The suite asserts a two-place column still
+  floors the step and rounds what is typed, and `EntityLogicalName` was read as
+  the table's name for a number column on a form; this build was not placed
+  on one.
+- **The canvas placeholder for this number group, member by member.** Its
+  effect was watched; `Type`, `MinValue` and `MaxValue` were not read.
+- **Range in a canvas app**, and what an unbound **Upper value** arrives as
+  there.
 - **P9, a phone.** `touch-action: none` on the track is the intended answer;
   nobody has dragged it on a phone.
 - **A record in a non-base currency** (P2: the org has only USD).

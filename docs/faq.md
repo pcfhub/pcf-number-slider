@@ -10,8 +10,8 @@ order: 8
 
 The column has no range of its own — only the platform's default, which is
 two billion wide — and **Minimum** and **Maximum** are blank. Set them, or
-give the column a minimum and maximum in the table designer. In a canvas app
-there is no column metadata at all, so set them there too.
+give the column a minimum and maximum in the table designer. A canvas app
+does not describe the column at all, so set them there too.
 
 ## Why does the slider not go all the way to the maximum?
 
