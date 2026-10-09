@@ -87,12 +87,12 @@ Only this build creates that global, so it is the check. The bundle can't be
 found by name in `performance.getEntriesByType('resource')` on this form
 (2026-10-03: no entry at all while the probe ran — confirmed, five keys).
 
-**Set-up on cll365 — done 2 Oct 2026**, with `pac solution import`, the
+**Set-up on the test environment — done 2 Oct 2026**, with `pac solution import`, the
 pp-prodev skill's `ppdev form control bind`, and the Web API for what ppdev
 has no command for (columns, the tab, the records):
 
 1. `NumberSliderSolution` 0.0.1 imported and published.
-2. On **Account**, in solution `cll365dev` (prefix `cll`): *Min seats*
+2. On **Account**, in the dev solution (prefix `cll`): *Min seats*
    `cll_minseats` and *Max seats* `cll_maxseats`, **Whole number**, 0..500.
    `cll_score` was already there — **Decimal, 0..100, precision 2**, not the
    0..10 / 1 first planned — and is used as it is.
@@ -120,7 +120,7 @@ has no command for (columns, the tab, the records):
    USD**, so P2's other-currency half cannot be asked here.
 
    ```
-   https://cll365.crm.dynamics.com/main.aspx?pagetype=entityrecord&etn=account&id=c6361bf1-d0be-f111-aaaf-6045bd06056e&formid=b053a39a-041a-4356-acef-ddf00182762b
+   https://<org>.crm.dynamics.com/main.aspx?pagetype=entityrecord&etn=account&id=c6361bf1-d0be-f111-aaaf-6045bd06056e&formid=b053a39a-041a-4356-acef-ddf00182762b
    ```
 
 **What the set-up taught, for the bind tooling:**
@@ -374,7 +374,7 @@ input), and the tags `slider`, `gauge` and `number` are not in the taxonomy.
 
 ## Walkthrough W1–W8 — 0.1.0 on the form
 
-Import `NumberSlider_0.1.0` (unmanaged) over the probe on cll365; the
+Import `NumberSlider_0.1.0` (unmanaged) over the probe on the test environment; the
 *Number Slider probe* tab and its five bindings stay as they are.
 
 | | Do | Expect |
@@ -388,7 +388,7 @@ Import `NumberSlider_0.1.0` (unmanaged) over the probe on cll365; the
 | W7 | Dark mode (`?flags=themingEnabled=true` or the app's dark theme) and a narrow window (~280 px for the section) | Fluent's dark colours; the box wraps under the track |
 | W8 | A canvas screen: the control on a number variable, OnChange `Set(n, n + 1)` | One OnChange per release; Minimum/Maximum needed (no column metadata) |
 
-**Passed on the form, 3 Oct 2026** — W1–W8, run by the user on cll365 with
+**Passed on the form, 3 Oct 2026** — W1–W8, run by the user on the test environment with
 `NumberSliderSolution` 0.1.0 imported over the probe.
 
 ## 0.1.2 — a canvas app reports a precision for no column
